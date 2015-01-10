@@ -1,0 +1,6 @@
+COPYING
+Makefile
+check-dist
+main.c
+test-t-bad.sh
+test-t-ok.sh
