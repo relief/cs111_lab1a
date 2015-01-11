@@ -40,7 +40,12 @@ make_command_stream (int (*get_next_byte) (void *),
     /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-    error (1, 0, "command reading not yet implemented");
+    //error (1, 0, "command reading not yet implemented");
+    
+    while (c = get_next_byte(get_next_byte_argument) != EOF) {
+        
+    }
+    
     return 0;
 }
 
