@@ -27,8 +27,10 @@
    complete the incomplete type declaration in command.h.  */
 struct command_stream
 {
-      
-};
+    command_t command;
+    command_stream *next;
+}
+
 command_t parseCmd(char * cmd){
   command_t c = new command();
   c->type = determineType(cmd);
@@ -74,8 +76,16 @@ command_t
 read_command_stream (command_stream_t s)
 {
   /* FIXME: Replace this with your implementation too.  */
-  error (1, 0, "command reading not yet implemented");
-  return 0;
+  //error (1, 0, "command reading not yet implemented");
+  //return 0;
+    if (s != NULL) {
+        command_t command = s.command;
+        s = s.next;
+        return command;
+    }
+    else {
+        return NULL;
+    }
 }
 
 /*
