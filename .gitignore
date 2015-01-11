@@ -1,1 +1,7 @@
 COPYING
+alloc.o
+execute-command.o
+main.o
+print-command.o
+profsh
+read-command.o

@@ -2,3 +2,23 @@ This is a skeleton for CS 111 Lab 1.
 
 Replace this README file with notes on your implementation.
 Mentions any special features or limitations.
+
+
+Reminders:
+	1. how to compile and run?
+			$make
+			$./profsh -t test.sh
+
+	2. One very confusing thing is 
+			char** word;
+	   in "struct command" of command-internals.h.
+
+	   It means even the simple command can contains several lines, one example can be like this:
+	   		a  \
+	   		<b \
+	   		>c
+
+	   And that's why there are double stars here for the word, so I use the following array of string to store the string of command:
+	   		char cmd_string[MAX_LINE_OF_SINGLE_COMMAND][MAX_SIZE_OF_COMMAND];
+
+	3. For now, I just seperate the commands by newline... but you can still test many of the example in test.sh...
