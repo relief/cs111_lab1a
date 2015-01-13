@@ -28,6 +28,11 @@
 #define MAX_LINE_OF_SINGLE_COMMAND 100
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
+enum operator_type
+{
+    IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN
+};
+
 struct command_stream
 {
     command_t command;
@@ -48,6 +53,7 @@ command_t initiate_command(){
   cmd->output= NULL;
   return cmd;
 }
+
 
 enum command_type determineType(char cmd[][MAX_SIZE_OF_COMMAND]){
   return SIMPLE_COMMAND;
@@ -118,25 +124,35 @@ make_command_stream (int (*get_next_byte) (void *),
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  char cmd_string[MAX_LINE_OF_SINGLE_COMMAND][MAX_SIZE_OF_COMMAND];
-  int reachEOF;
-  command_t cmd;
-  command_stream_t head = initiate_command_stream();
-  command_stream_t cur_cmd = head;
-  bzero(cmd_string,MAX_LINE_OF_SINGLE_COMMAND*MAX_SIZE_OF_COMMAND);
-  do{
-      /* seperate the cmd by newline for now */
-      reachEOF = get_next_command(get_next_byte,get_next_byte_argument,cmd_string);
-      /* parse the command from string to command_t */
-      //printf("cmd %s\n",cmd_string);
-      cmd = parseCmd(cmd_string);
+  // char cmd_string[MAX_LINE_OF_SINGLE_COMMAND][MAX_SIZE_OF_COMMAND];
+  // int reachEOF;
+  // command_t cmd;
+  // command_stream_t head = initiate_command_stream();
+  // command_stream_t cur_cmd = head;
+  // bzero(cmd_string,MAX_LINE_OF_SINGLE_COMMAND*MAX_SIZE_OF_COMMAND);
+  // do{
+  //     /* seperate the cmd by newline for now */
+  //     reachEOF = get_next_command(get_next_byte,get_next_byte_argument,cmd_string);
+  //     /* parse the command from string to command_t */
+  //     //printf("cmd %s\n",cmd_string);
+  //     cmd = parseCmd(cmd_string);
 
-      /* append the new command_t to linked list command_stream_t */
-      cur_cmd->next = initiate_command_stream();
-      cur_cmd = cur_cmd->next;
-      cur_cmd->command = cmd;
-  }while(reachEOF == 0);
-  //error (1, 0, "command reading not yet implemented");
+  //     /* append the new command_t to linked list command_stream_t */
+  //     cur_cmd->next = initiate_command_stream();
+  //     cur_cmd = cur_cmd->next;
+  //     cur_cmd->command = cmd;
+  // }while(reachEOF == 0);
+  // //error (1, 0, "command reading not yet implemented");
+  
+  enum operator_type op_stack[MAX_SIZEOF_STACK];
+  command_t cmd_stack[MAX_SIZEOF_STACK];
+
+  char *c;
+  while (c = get_next_token(get_next_byte, get_next_byte_argument))
+  {
+      printf("%s\n",c);
+  } 
+
   return head;
 }
 
