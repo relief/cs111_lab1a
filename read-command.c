@@ -32,7 +32,7 @@ const char IF_STR[] = "if";
    complete the incomplete type declaration in command.h.  */
 enum operator_type
 {
-    OTHERS, IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN, NEWLINE
+    OTHERS, IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN, NEWLINE, STDIN, STDOUT
 };
 
 struct command_stream
@@ -140,18 +140,37 @@ char *get_next_token(int (*get_next_byte) (void *),
 }
 
 enum operator_type get_token_type(char *token){
-    // //int a = strncmp(token,IF_STR,1);
-    // // printf("adsfsdf");
     if (strncmp(token,"if",2) == 0)
         return IF;
+    if (strncmp(token,"then",4) == 0)
+        return THEN;
+    if (strncmp(token,"else",4) == 0)
+        return ELSE;
+    if (strncmp(token,"fi",2) == 0)
+        return FI;
+    if (strncmp(token,":",1) == 0)
+        return COLON;
+    if (strncmp(token,"|",1) == 0)
+        return PIPE;
+    if (strncmp(token,"while",5) == 0)
+        return WHILE;
+    if (strncmp(token,"until",5) == 0)
+        return UNTIL;
+    if (strncmp(token,"done",4) == 0)
+        return DONE;
+    if (strncmp(token,"do",2) == 0)
+        return DO;
+    if (strncmp(token,"(",1) == 0)
+        return LEFT_PAREN;
+    if (strncmp(token,")",1) == 0)
+        return RIGHT_PAREN;
     if (strncmp(token,"\n",1) == 0)
         return NEWLINE;
-
-    // // if (strcmp(token,"else") == 0)
-    // //     return ELSE;
-    // // if (strcmp(token,"then") == 0)
-    // //     return THEN;
-    // printf("fine");
+    if (strncmp(token,"<",1) == 0)
+        return STDIN;
+    if (strncmp(token,">",1) == 0)
+        return STDOUT;
+    
     return OTHERS;
 }
 
