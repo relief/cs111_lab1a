@@ -27,6 +27,7 @@
 #define MAX_SIZE_OF_COMMAND 10000
 #define MAX_LINE_OF_SINGLE_COMMAND 100
 #define MAX_SIZEOF_STACK 1000
+const char IF_STR[] = "if";
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
 enum operator_type
@@ -138,14 +139,22 @@ char *get_next_token(int (*get_next_byte) (void *),
     return token;
 }
 
-enum operator_type get_token_type(char *c){
-    printf("$%s$\n",c);
-    if (strcmp(c,"if") == 0)
-        return IF;
-    if (strcmp(c,"else") == 0)
-        return ELSE;
-    if (strcmp(c,"then") == 0)
-        return THEN;
+enum operator_type get_token_type(char *token){
+    printf("$%s 123123\n  ",token);
+    printf("asdfsad");
+    //int a = strncmp(token,IF_STR,1);
+    // printf("adsfsdf");
+    // if (strncmp(token,IF_STR,2) == 0)
+    // {
+    // printf("fine");
+    //     return IF;
+    // }
+    
+    // // if (strcmp(token,"else") == 0)
+    // //     return ELSE;
+    // // if (strcmp(token,"then") == 0)
+    // //     return THEN;
+    // printf("fine");
     return OTHERS;
 }
 
@@ -189,7 +198,8 @@ make_command_stream (int (*get_next_byte) (void *),
           continue; //ignore spaces
       printf("Got token: %s\n",token);
       token_type = get_token_type(token);
-      printf("token_type: %d",token_type);
+
+      //printf("token_type: %d",token_type);
       if (token_type == OTHERS)
       {
           if (cmd_stack_top < 0)
