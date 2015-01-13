@@ -31,7 +31,7 @@
    complete the incomplete type declaration in command.h.  */
 enum operator_type
 {
-    IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN
+    OTHERS, IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN
 };
 
 struct command_stream
@@ -55,69 +55,37 @@ command_t initiate_command(){
   return cmd;
 }
 
-
-enum command_type determineType(char cmd[][MAX_SIZE_OF_COMMAND]){
-  return SIMPLE_COMMAND;
-};
 /* Parse a string of command into struct type command */
-command_t parseCmd(char cmd[][MAX_SIZE_OF_COMMAND]){
-  command_t c = initiate_command();
-  c->type = determineType(cmd);
-  switch (c->type){
-     case SIMPLE_COMMAND:
-          c->u.word = (void *)malloc(MAX_LINE_OF_SINGLE_COMMAND);
-          *(c->u.word) = (char *)malloc(strlen(*cmd)+1);
-          strcpy(*(c->u.word),*cmd);
-         // printf("%d\n",c->u.word);
-          //char **w = c->u.word;
-//          printf ("%*s%s", 2, "", *w);
-     //*(c->u.word+1) = NULL;
-     // pipe: c->command[0] = parseCmd(cmd[leftpart]);
-     //       c->command[1] = parseCmd(cmd[rightpart]);
-          break;
-     case IF_COMMAND:
-          break;
-     case PIPE_COMMAND:
-          break;
-     case SEQUENCE_COMMAND:
-          break;
-     case SUBSHELL_COMMAND:
-          break;
-     case UNTIL_COMMAND:
-          break;
-     case WHILE_COMMAND:
-          break;
-  }
-  return c;
-}
- 
-int get_next_command(int (*get_next_byte) (void *),
-         void *get_next_byte_argument,char cmd[][MAX_SIZE_OF_COMMAND]){
-    int c, last = 0, complete_command = 1;
-    int line = 0;
-
-    while ((c = get_next_byte(get_next_byte_argument)) != EOF)
-    {
-        if (c == '\n')
-        {
-             cmd[line][last] = '\0';
-             if (complete_command){
-                cmd[line+1][0] = '\0';
-                return 0;
-             }
-             else{
-                last = 0;
-                line++;
-             }
-        }
-        else{
-             cmd[line][last++] = c;
-        }
-    }
-    cmd[line][last] = '\0';
-    cmd[line+1][0] = '\0';
-    return 1;
-}
+// command_t parseCmd(char cmd[][MAX_SIZE_OF_COMMAND]){
+//   command_t c = initiate_command();
+//   c->type = determineType(cmd);
+//   switch (c->type){
+//      case SIMPLE_COMMAND:
+//           c->u.word = (void *)malloc(MAX_LINE_OF_SINGLE_COMMAND);
+//           *(c->u.word) = (char *)malloc(strlen(*cmd)+1);
+//           strcpy(*(c->u.word),*cmd);
+//          // printf("%d\n",c->u.word);
+//           //char **w = c->u.word;
+// //          printf ("%*s%s", 2, "", *w);
+//      //*(c->u.word+1) = NULL;
+//      // pipe: c->command[0] = parseCmd(cmd[leftpart]);
+//      //       c->command[1] = parseCmd(cmd[rightpart]);
+//           break;
+//      case IF_COMMAND:
+//           break;
+//      case PIPE_COMMAND:
+//           break;
+//      case SEQUENCE_COMMAND:
+//           break;
+//      case SUBSHELL_COMMAND:
+//           break;
+//      case UNTIL_COMMAND:
+//           break;
+//      case WHILE_COMMAND:
+//           break;
+//   }
+//   return c;
+// }
 
 //next step: ignore tokens that are single spaces, interpret just one newline as a ';'
 char *get_next_token(int (*get_next_byte) (void *),
@@ -170,6 +138,36 @@ char *get_next_token(int (*get_next_byte) (void *),
     return token;
 }
 
+enum operator_type get_token_type(char *c){
+    printf("$%s$\n",c);
+    if (strcmp(c,"if") == 0)
+        return IF;
+    if (strcmp(c,"else") == 0)
+        return ELSE;
+    if (strcmp(c,"then") == 0)
+        return THEN;
+    return OTHERS;
+}
+
+void push_to_cmd_stack(command_t s[], int *top, command_t ele){
+    *top = *top + 1;
+    s[*top] = ele;
+}
+command_t pop_cmd_stack(command_t s[], int *top){
+    *top = *top - 1;
+    return s[*top + 1];
+}
+command_t parse_as_simple(command_t cmd0, char* new_word){
+    if (cmd0){
+        char **word = cmd0->u.word;
+        while (*++word)
+          continue;
+        *word = new_word;
+    }else{
+        command_t cmd = initiate_command();
+        *(cmd->u.word) = new_word;
+    }
+}
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -177,35 +175,153 @@ make_command_stream (int (*get_next_byte) (void *),
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  // char cmd_string[MAX_LINE_OF_SINGLE_COMMAND][MAX_SIZE_OF_COMMAND];
-  // int reachEOF;
-  // command_t cmd;
-  // command_stream_t head = initiate_command_stream();
-  // command_stream_t cur_cmd = head;
-  // bzero(cmd_string,MAX_LINE_OF_SINGLE_COMMAND*MAX_SIZE_OF_COMMAND);
-  // do{
-  //     /* seperate the cmd by newline for now */
-  //     reachEOF = get_next_command(get_next_byte,get_next_byte_argument,cmd_string);
-  //     /* parse the command from string to command_t */
-  //     //printf("cmd %s\n",cmd_string);
-  //     cmd = parseCmd(cmd_string);
 
-  //     /* append the new command_t to linked list command_stream_t */
-  //     cur_cmd->next = initiate_command_stream();
-  //     cur_cmd = cur_cmd->next;
-  //     cur_cmd->command = cmd;
-  // }while(reachEOF == 0);
-  // //error (1, 0, "command reading not yet implemented");
-  
   enum operator_type op_stack[MAX_SIZEOF_STACK];
   command_t cmd_stack[MAX_SIZEOF_STACK];
-
+  int op_stack_top = -1;
+  int cmd_stack_top = -1;
+  enum operator_type last_token_type,token_type;
   char *token;
+
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
       if (*token == ' ' || token[0] == '\0')
-	continue; //ignore spaces
-      printf("Got token: %s\n", token);
+          continue; //ignore spaces
+      printf("Got token: %s\n",token);
+      token_type = get_token_type(token);
+      printf("token_type: %d",token_type);
+      if (token_type == OTHERS)
+      {
+          if (cmd_stack_top < 0)
+          {
+              command_t tmp = parse_as_simple(NULL, token);
+              push_to_cmd_stack(cmd_stack, cmd_stack_top, tmp);
+          }
+          else
+          {
+              // if (last_token_type == OTHERS){
+              //     append_to_cmd_stack_top;
+              // }else{
+              //     push_to_cmd_stack;
+              // }
+          }
+      }
+      // else
+      // {
+      //     if (op_stack_top < 0)
+      //         push_to_op_stack;
+      //     else{
+      //         switch(token_type){
+      //             case LEFT_PAREN:
+      //             case IF:
+      //             case WHILE:
+      //             case UNTIL:
+      //                 push_to_op_stack(token_type);
+      //                 break;
+      //             case PIPE:
+      //                 if (top_of_op_stack() == PIPE)
+      //                     parse_as_pipe;
+      //                 push_to_op_stack(token_type);
+      //                 break;
+      //             case COLON:
+      //                 if (top_of_op_stack() == PIPE)
+      //                     parse_as_pipe;
+      //                 else
+      //                   if (top_of_op_stack() == COLON && last_token_type == OTHER)
+      //                     parse_as_colon;
+      //                 push_to_op_stack(token_type);
+      //                 break;
+      //             case THEN:
+      //                 switch(top_of_op_stack()){
+      //                     case PIPE:
+      //                         parse_as_pipe;
+      //                         break;
+      //                     case COLON:
+      //                         parse_as_colon;
+      //                         break;
+      //                     case If:
+      //                         //fine here!
+      //                         break;
+      //                     default:
+      //                         //may be error
+      //                 }
+      //                 break;
+      //             case ELSE:
+      //                 switch(top_of_op_stack()){
+      //                     case PIPE:
+      //                         parse_as_pipe;
+      //                         break;
+      //                     case COLON:
+      //                         parse_as_colon;
+      //                         break;
+      //                     case THEN:
+      //                         //fine here!
+      //                         break;
+      //                     default:
+      //                         //may be error
+      //                 }
+      //                 break;
+      //             case FI:
+      //                 switch(top_of_op_stack()){
+      //                     case PIPE:
+      //                         parse_as_pipe;
+      //                         break;
+      //                     case COLON:
+      //                         parse_as_colon;
+      //                         break;
+      //                     case THEN:
+      //                     case ELSE:
+      //                         //fine here!
+      //                         break;
+      //                     default:
+      //                         //may be error
+      //                 }
+      //                 if (top_of_op_stack() == ELSE)
+      //                     parse_as_if_then_else_fi();
+      //                 else
+      //                     parse_as_if_then_fi();
+                                                  
+      //                 break;
+      //             case DO:
+      //                 switch(top_of_op_stack()){
+      //                     case PIPE:
+      //                         parse_as_pipe;
+      //                         break;
+      //                     case COLON:
+      //                         parse_as_colon;
+      //                         break;
+      //                     case WHILE:
+      //                     case UNTIL:
+      //                         //fine here!
+      //                         break;
+      //                     default:
+      //                         //may be error
+      //                 }
+      //                 break;
+      //             case DONE:
+      //                 switch(top_of_op_stack()){
+      //                     case PIPE:
+      //                         parse_as_pipe;
+      //                         break;
+      //                     case COLON:
+      //                         parse_as_colon;
+      //                         break;
+      //                     case DO:
+      //                         //fine here!
+      //                         break;
+      //                     default:
+      //                         //may be error
+      //                 }
+      //                 parse_as_while_do_done();
+      //                 parse_as_until_do_done();
+      //                 break;
+
+                      
+
+      //         }
+      //     }
+      // }
+      last_token_type = token_type;
   } 
 
   return initiate_command_stream();
