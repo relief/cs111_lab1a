@@ -118,6 +118,43 @@ int get_next_command(int (*get_next_byte) (void *),
     cmd[line+1][0] = '\0';
     return 1;
 }
+
+//next step: ignore tokens that are single spaces, interpret just one newline as a ';'
+get_next_token(int (*get_next_byte) (void *),
+               void *get_next_byte_argument)
+{
+    char token[MAX_SIZE_OF_COMMAND];
+    char c = get_next_byte(get_next_byte_argument);
+    int i = 0;
+    static char operator;
+    
+    if (operator != NULL) {
+        char tmp = operator;
+        operator = NULL;
+        return tmp;
+    }
+    
+    while (c != EOF) {
+        if (c == ' ') {
+            c = get_next_byte(get_next_byte_argument);
+            i++;
+        }
+        else if (c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')') {
+            token[i] = '\0';
+            operator = c; // we also need to return the current operator char
+            return token;
+        }
+        else {
+            token[i] = c;
+            c = get_next_byte(get_next_byte_argument);
+            i++;
+        }
+    }
+    
+    token[i] = '\0';
+    return token;
+}
+
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
