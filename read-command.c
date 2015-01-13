@@ -103,23 +103,23 @@ char *get_next_token(int (*get_next_byte) (void *),
     }
     else if (operator != '\0') {
         token[0] = operator;
-	token[1] = '\0';
-	operator = '\0';
-	//printf("About to return operator: %s\n", token);
+        token[1] = '\0';
+        operator = '\0';
+        //printf("About to return operator: %s\n", token);
         return token;
     }
 
     char c = get_next_byte(get_next_byte_argument);
 
     if (c == EOF)
-	return 0;
+        return 0;
 
     if (c == '#') {
-	//ignore comments
-	while (c != '\n' && c != EOF) {
-	    c = get_next_byte(get_next_byte_argument);	
-	}
-	c = get_next_byte(get_next_byte_argument);
+        //ignore comments
+        while (c != '\n' && c != EOF) {
+            c = get_next_byte(get_next_byte_argument);
+        }
+        c = get_next_byte(get_next_byte_argument);
     }
 
     while (c != EOF) {
