@@ -212,11 +212,8 @@ command_t parse_as_simple(command_t cmd0, char* new_word){
 
     if (cmd0){
         char **w = cmd0->u.word;
- 
         while (*++w) ;
-      
         *w = new_word_part;
-      
         return cmd0;
     }else{
         command_t cmd = initiate_command(SIMPLE_COMMAND);
@@ -226,6 +223,7 @@ command_t parse_as_simple(command_t cmd0, char* new_word){
         return cmd;
     }
 }
+
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -248,6 +246,11 @@ make_command_stream (int (*get_next_byte) (void *),
       token_type = get_token_type(token);
       printf("token_type %d\n",token_type);
       //printf("token_type: %d",token_type);
+      if (last_token_type == NEWLINE && token_type != NEWLINE)
+      {
+      	  	  pop_op_stack();
+      	  	  push_to_op_stack(SEMICOLON);
+      }
       if (token_type == OTHERS)
       {
           if (cmd_stack_top < 0)
@@ -286,8 +289,22 @@ make_command_stream (int (*get_next_byte) (void *),
                           cmd_stream = cmd_stream->next;
                           cmd_stream->command = pop_cmd_stack();
                       }
-
                       break;
+                  case THEN:
+                      switch(top_of_op_stack()){
+                          case PIPE:
+                              parse_as_pipe;
+                              break;
+                          case COLON:
+                              parse_as_colon;
+                              break;
+                          case If:
+                              //fine here!
+                              break;
+                          default:
+                              //may be error
+                      }
+                      break;   
              }
           }
       }
