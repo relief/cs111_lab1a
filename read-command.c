@@ -26,6 +26,7 @@
    static function definitions, etc.  */
 #define MAX_SIZE_OF_COMMAND 10000
 #define MAX_LINE_OF_SINGLE_COMMAND 100
+#define MAX_SIZEOF_STACK 1000
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
 enum operator_type
@@ -153,7 +154,7 @@ make_command_stream (int (*get_next_byte) (void *),
       printf("%s\n",c);
   } 
 
-  return head;
+  return initiate_command_stream();
 }
 
 command_t
