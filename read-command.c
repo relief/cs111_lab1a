@@ -120,39 +120,38 @@ int get_next_command(int (*get_next_byte) (void *),
 }
 
 //next step: ignore tokens that are single spaces, interpret just one newline as a ';'
-get_next_token(int (*get_next_byte) (void *),
+char *get_next_token(int (*get_next_byte) (void *),
                void *get_next_byte_argument)
 {
     char token[MAX_SIZE_OF_COMMAND];
     char c = get_next_byte(get_next_byte_argument);
     int i = 0;
-    static char operator;
-    
-    if (operator != NULL) {
-        char tmp = operator;
-        operator = NULL;
-        return tmp;
+    static char operator = NULL;
+    //printf("Operator = %c\n", operator);    
+
+    if (operator != NULL && operator != ' ') {
+        token[0] = operator;
+	token[1] = '\0';
+	operator = NULL;
+	//printf("About to return operator: %s\n", token);
+        return token;
     }
     
     while (c != EOF) {
-        if (c == ' ') {
-            c = get_next_byte(get_next_byte_argument);
-            i++;
-        }
-        else if (c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')') {
-            token[i] = '\0';
+	//printf("At character: %c\n", c);
+        if (c == ' ' || c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')') {
+            token[i++] = '\0';
             operator = c; // we also need to return the current operator char
-            return token;
+	    return token;
         }
         else {
-            token[i] = c;
+            token[i++] = c;
             c = get_next_byte(get_next_byte_argument);
-            i++;
         }
     }
     
-    token[i] = '\0';
-    return token;
+    //token[i] = '\0';
+    return EOF;
 }
 
 command_stream_t
@@ -188,7 +187,11 @@ make_command_stream (int (*get_next_byte) (void *),
   char *c;
   while (c = get_next_token(get_next_byte, get_next_byte_argument))
   {
-      printf("%s\n",c);
+      if (*c == EOF)
+	break;
+      if (*c == ' ')
+	continue; //ignore spaces
+      printf("Got token: %s\n",c);
   } 
 
   return initiate_command_stream();
