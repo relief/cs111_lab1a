@@ -125,21 +125,33 @@ char *get_next_token(int (*get_next_byte) (void *),
 {
     char token[MAX_SIZE_OF_COMMAND];
     int i = 0;
-    static char operator = NULL;
+    static char operator = '\0';
     //printf("Operator = %c\n", operator);    
 	
     if (operator == ' ') {
-	operator = NULL;
+	// ignore spaces
+	operator = '\0';
     }
-    else if (operator != NULL) {
+    else if (operator != '\0') {
         token[0] = operator;
 	token[1] = '\0';
-	operator = NULL;
+	operator = '\0';
 	//printf("About to return operator: %s\n", token);
         return token;
     }
 
     char c = get_next_byte(get_next_byte_argument);
+
+    if (c == EOF)
+	return 0;
+
+    if (c == '#') {
+	//ignore comments
+	while (c != '\n' && c != EOF) {
+	    c = get_next_byte(get_next_byte_argument);	
+	}
+	c = get_next_byte(get_next_byte_argument);
+    }
 
     while (c != EOF) {
 	//printf("At character: %c\n", c);
@@ -154,8 +166,8 @@ char *get_next_token(int (*get_next_byte) (void *),
         }
     }
     
-    //token[i] = '\0';
-    return EOF;
+    token[i] = '\0';
+    return token;
 }
 
 command_stream_t
@@ -188,12 +200,12 @@ make_command_stream (int (*get_next_byte) (void *),
   enum operator_type op_stack[MAX_SIZEOF_STACK];
   command_t cmd_stack[MAX_SIZEOF_STACK];
 
-  char *c;
-  while (c = get_next_token(get_next_byte, get_next_byte_argument))
+  char *token;
+  while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
-      if (*c == ' ' || c[0] == '\0')
+      if (*token == ' ' || token[0] == '\0')
 	continue; //ignore spaces
-      printf("Got token: %s\n",c);
+      printf("Got token: %s\n", token);
   } 
 
   return initiate_command_stream();
