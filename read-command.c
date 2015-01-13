@@ -48,8 +48,9 @@ command_stream_t initiate_command_stream(){
   return cmd_stream;
 }
 
-command_t initiate_command(){
+command_t initiate_command(enum command_type type){
   command_t cmd = (command_t) malloc(sizeof(struct command));
+  cmd->type = type;
   cmd->status = 0;
   cmd->input = NULL;
   cmd->output= NULL;
@@ -182,17 +183,57 @@ command_t pop_cmd_stack(command_t s[], int *top){
     *top = *top - 1;
     return s[*top + 1];
 }
+void push_to_op_stack(enum operator_type s[], int *top, enum operator_type ele){
+    *top = *top + 1;
+    s[*top] = ele;
+}
+enum operator_type pop_op_stack(enum operator_type s[], int *top){
+    *top = *top - 1;
+    return s[*top + 1];
+}
+enum operator_type top_of_op_stack(enum operator_type s[], int *top){
+    return s[*top];
+}
 command_t parse_as_simple(command_t cmd0, char* new_word){
     if (cmd0){
         printf("lalal\n" );
-        char **word = cmd0->u.word;
-        while (*++word)
-          continue;
-        *word = new_word;
+        char **w = cmd0->u.word;
+        printf("fine\n");
+                          printf ("%*s%s", 2, "", *w);
+                          printf("fine\n");
+                          while (*++w)
+                            printf (" %s", *w);
+        printf("\n");
+
+        char **word = cmd0->u.word + 1;
+
+        word= (void *)malloc(sizeof(void*));
+        *word = (char *)malloc(strlen(new_word)+1);
+        strcpy(*(word),new_word);
+        printf("lalal\n" );
+
+        w = cmd0->u.word;
+        printf("fine\n");
+                          printf ("%*s%s", 2, "", *w);
+                          printf("fine\n");
+                          while (*++w)
+                            printf (" %s", *w);
+        printf("\n");
         return cmd0;
     }else{
-        command_t cmd = initiate_command();
-        cmd->u.word = &new_word;
+        command_t cmd = initiate_command(SIMPLE_COMMAND);
+        cmd->u.word = (void *)malloc(sizeof(void*));
+        printf("asdfas\n");
+        *(cmd->u.word) = (char *)malloc(strlen(new_word)+1);
+        printf("asdfas\n");
+        strcpy(*(cmd->u.word),new_word);
+        printf("asdfas\n");
+        char **w = cmd->u.word;
+        
+                          printf ("%*s%s", 2, "", *w);
+                          while (*++w)
+                            printf (" %s", *w);
+        printf("\n");
         return cmd;
     }
 }
@@ -211,6 +252,7 @@ make_command_stream (int (*get_next_byte) (void *),
   enum operator_type last_token_type,token_type;
   char *token;
   command_stream_t head = initiate_command_stream();
+  command_stream_t cmd_stream = head;
   
 
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
@@ -230,136 +272,51 @@ make_command_stream (int (*get_next_byte) (void *),
           }
           else
           {
-              // if (last_token_type == OTHERS){
-              //     append_to_cmd_stack_top;
-              // }else{
-              //     push_to_cmd_stack;
-              // }
+              if (last_token_type == OTHERS){
+                  parse_as_simple(cmd_stack+cmd_stack_top, token) ;
+              }else{
+                  command_t tmp = parse_as_simple(NULL, token);
+                  push_to_cmd_stack(cmd_stack, &cmd_stack_top, tmp);
+              }
           }
       }
       else
       {
           if (op_stack_top < 0)
-              push_to_op_stack(token_type);
+              push_to_op_stack(op_stack,&op_stack_top,token_type);
           else{
-              switch(token_type){
+              switch(token_type)
+              {
                   case LEFT_PAREN:
                   case IF:
                   case WHILE:
                   case UNTIL:
-                      push_to_op_stack(token_type);
+                      push_to_op_stack(op_stack,&op_stack_top,token_type);
                       break;
                   case NEWLINE:
-                      if (top_of_op_stack() == NEWLINE && op_stack_top == 0 && cmd_stack_top == 0)
+                      printf("i am at new line \n");
+                      if (top_of_op_stack(op_stack,&op_stack_top) == NEWLINE && op_stack_top == 0 && cmd_stack_top == 0)
                       {
-
+                          printf("i am at new line \n");
+                          pop_op_stack(op_stack,&op_stack_top);
+                          cmd_stream->next = initiate_command_stream();
+                          cmd_stream = cmd_stream->next;
+                          cmd_stream->command = pop_cmd_stack(cmd_stack,&cmd_stack_top);
+                          char **w = cmd_stream->command->u.word;
+                          printf ("%*s%s", 2, "", *w);
+                          while (*++w)
+                            printf (" %s", *w);
                       }
-
-
-              }
-      //            case PIPE:
-      //                 if (top_of_op_stack() == PIPE)
-      //                     parse_as_pipe;
-      //                 push_to_op_stack(token_type);
-      //                 break;
-      //             case COLON:
-      //                 if (top_of_op_stack() == PIPE)
-      //                     parse_as_pipe;
-      //                 else
-      //                   if (top_of_op_stack() == COLON && last_token_type == OTHER)
-      //                     parse_as_colon;
-      //                 push_to_op_stack(token_type);
-      //                 break;
-      //             case THEN:
-      //                 switch(top_of_op_stack()){
-      //                     case PIPE:
-      //                         parse_as_pipe;
-      //                         break;
-      //                     case COLON:
-      //                         parse_as_colon;
-      //                         break;
-      //                     case If:
-      //                         //fine here!
-      //                         break;
-      //                     default:
-      //                         //may be error
-      //                 }
-      //                 break;
-      //             case ELSE:
-      //                 switch(top_of_op_stack()){
-      //                     case PIPE:
-      //                         parse_as_pipe;
-      //                         break;
-      //                     case COLON:
-      //                         parse_as_colon;
-      //                         break;
-      //                     case THEN:
-      //                         //fine here!
-      //                         break;
-      //                     default:
-      //                         //may be error
-      //                 }
-      //                 break;
-      //             case FI:
-      //                 switch(top_of_op_stack()){
-      //                     case PIPE:
-      //                         parse_as_pipe;
-      //                         break;
-      //                     case COLON:
-      //                         parse_as_colon;
-      //                         break;
-      //                     case THEN:
-      //                     case ELSE:
-      //                         //fine here!
-      //                         break;
-      //                     default:
-      //                         //may be error
-      //                 }
-      //                 if (top_of_op_stack() == ELSE)
-      //                     parse_as_if_then_else_fi();
-      //                 else
-      //                     parse_as_if_then_fi();
-                                                  
-      //                 break;
-      //             case DO:
-      //                 switch(top_of_op_stack()){
-      //                     case PIPE:
-      //                         parse_as_pipe;
-      //                         break;
-      //                     case COLON:
-      //                         parse_as_colon;
-      //                         break;
-      //                     case WHILE:
-      //                     case UNTIL:
-      //                         //fine here!
-      //                         break;
-      //                     default:
-      //                         //may be error
-      //                 }
-      //                 break;
-      //             case DONE:
-      //                 switch(top_of_op_stack()){
-      //                     case PIPE:
-      //                         parse_as_pipe;
-      //                         break;
-      //                     case COLON:
-      //                         parse_as_colon;
-      //                         break;
-      //                     case DO:
-      //                         //fine here!
-      //                         break;
-      //                     default:
-      //                         //may be error
-      //                 }
-      //                 parse_as_while_do_done();
-      //                 parse_as_until_do_done();
-      //                 break;
-      //     }
+                      break;
+             }
+          }
       }
+      printf("top of op stack: %d\n", op_stack_top);
+      printf("top of cmd stack: %d\n", cmd_stack_top);
       last_token_type = token_type;
   } 
 
-  return cmd_stream;
+  return head;
 }
 
 command_t
@@ -369,7 +326,7 @@ read_command_stream (command_stream_t s)
   //error (1, 0, "command reading not yet implemented");
   //return 0;
   //printf("cmd %d next %d",s->command, s->next);
-
+    printf("i am here\n");
     if (s->next) 
     {
         command_t command = s->next->command;
