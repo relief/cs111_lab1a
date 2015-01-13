@@ -191,7 +191,9 @@ make_command_stream (int (*get_next_byte) (void *),
   int cmd_stack_top = -1;
   enum operator_type last_token_type,token_type;
   char *token;
-  command_stream_t cmd_stream = initiate_command_stream();
+  command_stream_t head = initiate_command_stream();
+  
+
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
       if (*token == ' ' || token[0] == '\0')
@@ -218,18 +220,25 @@ make_command_stream (int (*get_next_byte) (void *),
       }
       else
       {
-             if (token_type == NEWLINE && )
-      //     if (op_stack_top < 0)
-      //         push_to_op_stack;
-      //     else{
-      //         switch(token_type){
-      //             case LEFT_PAREN:
-      //             case IF:
-      //             case WHILE:
-      //             case UNTIL:
-      //                 push_to_op_stack(token_type);
-      //                 break;
-      //             case PIPE:
+          if (op_stack_top < 0)
+              push_to_op_stack(token_type);
+          else{
+              switch(token_type){
+                  case LEFT_PAREN:
+                  case IF:
+                  case WHILE:
+                  case UNTIL:
+                      push_to_op_stack(token_type);
+                      break;
+                  case NEWLINE:
+                      if (top_of_op_stack() == NEWLINE && op_stack_top == 0 && cmd_stack_top == 0)
+                      {
+
+                      }
+
+
+              }
+      //            case PIPE:
       //                 if (top_of_op_stack() == PIPE)
       //                     parse_as_pipe;
       //                 push_to_op_stack(token_type);
@@ -326,10 +335,6 @@ make_command_stream (int (*get_next_byte) (void *),
       //                 parse_as_while_do_done();
       //                 parse_as_until_do_done();
       //                 break;
-
-                      
-
-      //         }
       //     }
       }
       last_token_type = token_type;
