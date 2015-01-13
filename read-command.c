@@ -27,11 +27,12 @@
 #define MAX_SIZE_OF_COMMAND 10000
 #define MAX_LINE_OF_SINGLE_COMMAND 100
 #define MAX_SIZEOF_STACK 1000
+const char IF_STR[] = "if";
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
 enum operator_type
 {
-    OTHERS, IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN
+    OTHERS, IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN, NEWLINE
 };
 
 struct command_stream
@@ -138,14 +139,19 @@ char *get_next_token(int (*get_next_byte) (void *),
     return token;
 }
 
-enum operator_type get_token_type(char *c){
-    printf("$%s$\n",c);
-    if (strcmp(c,"if") == 0)
+enum operator_type get_token_type(char *token){
+    // //int a = strncmp(token,IF_STR,1);
+    // // printf("adsfsdf");
+    if (strncmp(token,"if",2) == 0)
         return IF;
-    if (strcmp(c,"else") == 0)
-        return ELSE;
-    if (strcmp(c,"then") == 0)
-        return THEN;
+    if (strncmp(token,"\n",1) == 0)
+        return NEWLINE;
+
+    // // if (strcmp(token,"else") == 0)
+    // //     return ELSE;
+    // // if (strcmp(token,"then") == 0)
+    // //     return THEN;
+    // printf("fine");
     return OTHERS;
 }
 
@@ -159,13 +165,16 @@ command_t pop_cmd_stack(command_t s[], int *top){
 }
 command_t parse_as_simple(command_t cmd0, char* new_word){
     if (cmd0){
+        printf("lalal\n" );
         char **word = cmd0->u.word;
         while (*++word)
           continue;
         *word = new_word;
+        return cmd0;
     }else{
         command_t cmd = initiate_command();
-        *(cmd->u.word) = new_word;
+        cmd->u.word = &new_word;
+        return cmd;
     }
 }
 command_stream_t
@@ -182,20 +191,21 @@ make_command_stream (int (*get_next_byte) (void *),
   int cmd_stack_top = -1;
   enum operator_type last_token_type,token_type;
   char *token;
-
+  command_stream_t cmd_stream = initiate_command_stream();
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
       if (*token == ' ' || token[0] == '\0')
           continue; //ignore spaces
       printf("Got token: %s\n",token);
       token_type = get_token_type(token);
-      printf("token_type: %d",token_type);
+      printf("token_type %d\n",token_type);
+      //printf("token_type: %d",token_type);
       if (token_type == OTHERS)
       {
           if (cmd_stack_top < 0)
           {
               command_t tmp = parse_as_simple(NULL, token);
-              push_to_cmd_stack(cmd_stack, cmd_stack_top, tmp);
+              push_to_cmd_stack(cmd_stack, &cmd_stack_top, tmp);
           }
           else
           {
@@ -206,8 +216,9 @@ make_command_stream (int (*get_next_byte) (void *),
               // }
           }
       }
-      // else
-      // {
+      else
+      {
+             if (token_type == NEWLINE && )
       //     if (op_stack_top < 0)
       //         push_to_op_stack;
       //     else{
@@ -320,11 +331,11 @@ make_command_stream (int (*get_next_byte) (void *),
 
       //         }
       //     }
-      // }
+      }
       last_token_type = token_type;
   } 
 
-  return initiate_command_stream();
+  return cmd_stream;
 }
 
 command_t
