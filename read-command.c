@@ -24,8 +24,8 @@
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
-#define MAX_SIZE_OF_COMMAND 10000
-#define MAX_LINE_OF_SINGLE_COMMAND 100
+#define MAX_SIZE_OF_COMMAND 1000
+#define MAX_SIZE_OF_SIMPLE_COMMAND 1000
 #define MAX_SIZEOF_STACK 1000
 const char IF_STR[] = "if";
 /* FIXME: Define the type 'struct command_stream' here.  This should
@@ -40,6 +40,11 @@ struct command_stream
     command_t command;
     command_stream_t next;
 };
+
+enum operator_type op_stack[MAX_SIZEOF_STACK];
+command_t cmd_stack[MAX_SIZEOF_STACK];
+int op_stack_top = -1;
+int cmd_stack_top = -1;
 
 command_stream_t initiate_command_stream(){
   command_stream_t cmd_stream = (command_stream_t) malloc(sizeof(struct command_stream));
@@ -175,65 +180,49 @@ enum operator_type get_token_type(char *token){
     return OTHERS;
 }
 
-void push_to_cmd_stack(command_t s[], int *top, command_t ele){
-    *top = *top + 1;
-    s[*top] = ele;
+void push_to_cmd_stack(command_t ele){
+    cmd_stack_top = cmd_stack_top + 1;
+    cmd_stack[cmd_stack_top] = ele;
 }
-command_t pop_cmd_stack(command_t s[], int *top){
-    *top = *top - 1;
-    return s[*top + 1];
+command_t top_of_cmd_stack(){
+    if (cmd_stack_top >= 0)
+      return cmd_stack[cmd_stack_top];
+    return NULL;
 }
-void push_to_op_stack(enum operator_type s[], int *top, enum operator_type ele){
-    *top = *top + 1;
-    s[*top] = ele;
+command_t pop_cmd_stack(){
+    cmd_stack_top -= 1;
+    return cmd_stack[cmd_stack_top + 1];
 }
-enum operator_type pop_op_stack(enum operator_type s[], int *top){
-    *top = *top - 1;
-    return s[*top + 1];
+void push_to_op_stack(enum operator_type ele){
+    op_stack_top = op_stack_top + 1;
+    op_stack[op_stack_top] = ele;
 }
-enum operator_type top_of_op_stack(enum operator_type s[], int *top){
-    return s[*top];
+enum operator_type pop_op_stack(){
+    op_stack_top = op_stack_top - 1;
+    return op_stack[op_stack_top + 1];
+}
+enum operator_type top_of_op_stack(){
+    if (op_stack_top < 0)
+        return -1;
+    return op_stack[op_stack_top];
 }
 command_t parse_as_simple(command_t cmd0, char* new_word){
+    char *new_word_part = (char *)malloc(strlen(new_word)+1);
+    strcpy(new_word_part,new_word);
+
     if (cmd0){
-        printf("lalal\n" );
         char **w = cmd0->u.word;
-        printf("fine\n");
-                          printf ("%*s%s", 2, "", *w);
-                          printf("fine\n");
-                          while (*++w)
-                            printf (" %s", *w);
-        printf("\n");
-
-        char **word = cmd0->u.word + 1;
-
-        word= (void *)malloc(sizeof(void*));
-        *word = (char *)malloc(strlen(new_word)+1);
-        strcpy(*(word),new_word);
-        printf("lalal\n" );
-
-        w = cmd0->u.word;
-        printf("fine\n");
-                          printf ("%*s%s", 2, "", *w);
-                          printf("fine\n");
-                          while (*++w)
-                            printf (" %s", *w);
-        printf("\n");
+ 
+        while (*++w) ;
+      
+        *w = new_word_part;
+      
         return cmd0;
     }else{
         command_t cmd = initiate_command(SIMPLE_COMMAND);
-        cmd->u.word = (void *)malloc(sizeof(void*));
-        printf("asdfas\n");
-        *(cmd->u.word) = (char *)malloc(strlen(new_word)+1);
-        printf("asdfas\n");
-        strcpy(*(cmd->u.word),new_word);
-        printf("asdfas\n");
-        char **w = cmd->u.word;
+        cmd->u.word = (void *)malloc(MAX_SIZE_OF_SIMPLE_COMMAND*sizeof(void*));
+        *(cmd->u.word) = new_word_part;
         
-                          printf ("%*s%s", 2, "", *w);
-                          while (*++w)
-                            printf (" %s", *w);
-        printf("\n");
         return cmd;
     }
 }
@@ -245,10 +234,6 @@ make_command_stream (int (*get_next_byte) (void *),
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
 
-  enum operator_type op_stack[MAX_SIZEOF_STACK];
-  command_t cmd_stack[MAX_SIZEOF_STACK];
-  int op_stack_top = -1;
-  int cmd_stack_top = -1;
   enum operator_type last_token_type,token_type;
   char *token;
   command_stream_t head = initiate_command_stream();
@@ -268,22 +253,22 @@ make_command_stream (int (*get_next_byte) (void *),
           if (cmd_stack_top < 0)
           {
               command_t tmp = parse_as_simple(NULL, token);
-              push_to_cmd_stack(cmd_stack, &cmd_stack_top, tmp);
+              push_to_cmd_stack(tmp);
           }
           else
           {
               if (last_token_type == OTHERS){
-                  parse_as_simple(cmd_stack+cmd_stack_top, token) ;
+                  parse_as_simple(top_of_cmd_stack(), token);
               }else{
                   command_t tmp = parse_as_simple(NULL, token);
-                  push_to_cmd_stack(cmd_stack, &cmd_stack_top, tmp);
+                  push_to_cmd_stack(tmp);
               }
           }
       }
       else
       {
           if (op_stack_top < 0)
-              push_to_op_stack(op_stack,&op_stack_top,token_type);
+              push_to_op_stack(token_type);
           else{
               switch(token_type)
               {
@@ -291,22 +276,17 @@ make_command_stream (int (*get_next_byte) (void *),
                   case IF:
                   case WHILE:
                   case UNTIL:
-                      push_to_op_stack(op_stack,&op_stack_top,token_type);
+                      push_to_op_stack(token_type);
                       break;
-                  case NEWLINE:
-                      printf("i am at new line \n");
-                      if (top_of_op_stack(op_stack,&op_stack_top) == NEWLINE && op_stack_top == 0 && cmd_stack_top == 0)
+                  case NEWLINE:         
+                      if (top_of_op_stack() == NEWLINE && op_stack_top == 0 && cmd_stack_top == 0)
                       {
-                          printf("i am at new line \n");
                           pop_op_stack(op_stack,&op_stack_top);
                           cmd_stream->next = initiate_command_stream();
                           cmd_stream = cmd_stream->next;
-                          cmd_stream->command = pop_cmd_stack(cmd_stack,&cmd_stack_top);
-                          char **w = cmd_stream->command->u.word;
-                          printf ("%*s%s", 2, "", *w);
-                          while (*++w)
-                            printf (" %s", *w);
+                          cmd_stream->command = pop_cmd_stack();
                       }
+
                       break;
              }
           }
@@ -326,7 +306,6 @@ read_command_stream (command_stream_t s)
   //error (1, 0, "command reading not yet implemented");
   //return 0;
   //printf("cmd %d next %d",s->command, s->next);
-    printf("i am here\n");
     if (s->next) 
     {
         command_t command = s->next->command;

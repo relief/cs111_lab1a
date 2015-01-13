@@ -1,2 +1,10 @@
-cat a
+true
+
+g++ -c foo.c
+
+: : :
+
+a ; b
+
+
 
