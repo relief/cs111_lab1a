@@ -131,12 +131,6 @@ make_command_stream (int (*get_next_byte) (void *),
       //printf("cmd %s\n",cmd_string);
       cmd = parseCmd(cmd_string);
 
-// printf("-----begin of \n");
-//       char **w = cmd->u.word;
-//       printf ("%*s%s", 2, "", *w);
-
-// printf("-----end of \n");
-
       /* append the new command_t to linked list command_stream_t */
       cur_cmd->next = initiate_command_stream();
       cur_cmd = cur_cmd->next;
