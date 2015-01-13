@@ -97,8 +97,8 @@ char *get_next_token(int (*get_next_byte) (void *),
     //printf("Operator = %c\n", operator);    
 	
     if (operator == ' ') {
-	// ignore spaces
-	operator = '\0';
+        // ignore spaces
+        operator = '\0';
     }
     else if (operator != '\0') {
         token[0] = operator;
@@ -126,7 +126,7 @@ char *get_next_token(int (*get_next_byte) (void *),
         if (c == ' ' || c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')') {
             token[i++] = '\0';
             operator = c; // we also need to return the current operator char
-	    return token;
+            return token;
         }
         else {
             token[i++] = c;
