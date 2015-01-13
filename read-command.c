@@ -124,19 +124,23 @@ char *get_next_token(int (*get_next_byte) (void *),
                void *get_next_byte_argument)
 {
     char token[MAX_SIZE_OF_COMMAND];
-    char c = get_next_byte(get_next_byte_argument);
     int i = 0;
     static char operator = NULL;
     //printf("Operator = %c\n", operator);    
-
-    if (operator != NULL && operator != ' ') {
+	
+    if (operator == ' ') {
+	operator = NULL;
+    }
+    else if (operator != NULL) {
         token[0] = operator;
 	token[1] = '\0';
 	operator = NULL;
 	//printf("About to return operator: %s\n", token);
         return token;
     }
-    
+
+    char c = get_next_byte(get_next_byte_argument);
+
     while (c != EOF) {
 	//printf("At character: %c\n", c);
         if (c == ' ' || c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')') {
@@ -187,9 +191,7 @@ make_command_stream (int (*get_next_byte) (void *),
   char *c;
   while (c = get_next_token(get_next_byte, get_next_byte_argument))
   {
-      if (*c == EOF)
-	break;
-      if (*c == ' ')
+      if (*c == ' ' || c[0] == '\0')
 	continue; //ignore spaces
       printf("Got token: %s\n",c);
   } 
