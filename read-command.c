@@ -32,7 +32,7 @@ const char IF_STR[] = "if";
    complete the incomplete type declaration in command.h.  */
 enum operator_type
 {
-    OTHERS, IF, THEN, ELSE, FI, COLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN, NEWLINE, STDIN, STDOUT
+    OTHERS, IF, THEN, ELSE, FI, SEMICOLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN, NEWLINE, STDIN, STDOUT
 };
 
 struct command_stream
@@ -149,8 +149,8 @@ enum operator_type get_token_type(char *token){
         return ELSE;
     if (strncmp(token,"fi",2) == 0)
         return FI;
-    if (strncmp(token,":",1) == 0)
-        return COLON;
+    if (strncmp(token,";",1) == 0)
+        return SEMICOLON;
     if (strncmp(token,"|",1) == 0)
         return PIPE;
     if (strncmp(token,"while",5) == 0)
