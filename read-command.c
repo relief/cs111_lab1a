@@ -46,6 +46,10 @@ command_t cmd_stack[MAX_SIZEOF_STACK];
 int op_stack_top = -1;
 int cmd_stack_top = -1;
 
+command_t tmp1, tmp2, tmp3, res;
+char *ctmp;
+enum operator_type last_push_type,token_type;
+
 command_stream_t initiate_command_stream(){
   command_stream_t cmd_stream = (command_stream_t) malloc(sizeof(struct command_stream));
   cmd_stream->command = NULL;
@@ -203,9 +207,10 @@ enum operator_type pop_op_stack(){
 }
 enum operator_type top_of_op_stack(){
     if (op_stack_top < 0)
-        return -1;
+        return 0;
     return op_stack[op_stack_top];
 }
+
 command_t parse_as_simple(command_t cmd0, char* new_word){
     char *new_word_part = (char *)malloc(strlen(new_word)+1);
     strcpy(new_word_part,new_word);
@@ -223,36 +228,83 @@ command_t parse_as_simple(command_t cmd0, char* new_word){
         return cmd;
     }
 }
+command_t parse_as_pipe(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(PIPE_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2; 
+	return cmd;
+}
+
+command_t parse_as_sequence(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(SEQUENCE_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2; 
+	return cmd;
+}
+
+command_t parse_as_subshell(command_t cmd0){
+	command_t cmd = initiate_command(SUBSHELL_COMMAND);
+	cmd->u.command[0] = cmd0;
+	return cmd;
+}
+
+command_t parse_as_if(command_t cmd1, command_t cmd2, command_t cmd3){
+	command_t cmd = initiate_command(IF_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	if (cmd3 != NULL) 
+		cmd->u.command[2] = cmd3;
+	return cmd;
+}
+
+command_t parse_as_until(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(UNTIL_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	return cmd;
+}
+
+command_t parse_as_while(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(WHILE_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	return cmd;
+}
+
 
 command_t evaluateCmd(){
-	command_t tmp1, tmp2, tmp3, res;
-	char *chartmp;
 	while (top_of_op_stack()){
+		      printf("top of op stack: %d\n", op_stack_top);
+      printf("top of cmd stack: %d\n", cmd_stack_top);
+
 		switch (pop_op_stack())
 		{
 			case PIPE:
 				tmp2 = pop_cmd_stack();
 				tmp1 = pop_cmd_stack();
 				res  = parse_as_pipe(tmp1,tmp2);
+				push_to_cmd_stack(res);
+				last_push_type = OTHERS;
 				break;
 			case SEMICOLON:
 				tmp2 = pop_cmd_stack();
 				tmp1 = pop_cmd_stack();
-				res  = parse_as_semicolon(tmp1,tmp2);
+				res  = parse_as_sequence(tmp1,tmp2);
+				push_to_cmd_stack(res);
+				last_push_type = OTHERS;
 				break;
 			case STDIN:
 			case STDOUT:	
+				break;
 		}
 	}
+	printf("cmd_stack_top %d\n",cmd_stack_top);
 	if (cmd_stack_top == 0){
-		pop_op_stack(op_stack,&op_stack_top);
-		cmd_stream->next = initiate_command_stream();
-		cmd_stream = cmd_stream->next;
-		cmd_stream->command = pop_cmd_stack();
+		return pop_cmd_stack();
 	}else
 		error (1, 0, "bad thing happen in evaluateCmd");
-
 }
+
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -261,7 +313,6 @@ make_command_stream (int (*get_next_byte) (void *),
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
 
-  enum operator_type last_token_type,token_type;
   char *token;
   command_stream_t head = initiate_command_stream();
   command_stream_t cmd_stream = head;
@@ -275,7 +326,7 @@ make_command_stream (int (*get_next_byte) (void *),
       token_type = get_token_type(token);
       printf("token_type %d\n",token_type);
       //printf("token_type: %d",token_type);
-      if (last_token_type == NEWLINE && token_type != NEWLINE)
+      if (last_push_type == NEWLINE && token_type != NEWLINE)
       {
       	  	  pop_op_stack();
       	  	  push_to_op_stack(SEMICOLON);
@@ -289,7 +340,7 @@ make_command_stream (int (*get_next_byte) (void *),
           }
           else
           {
-              if (last_token_type == OTHERS){
+              if (last_push_type == OTHERS){
                   parse_as_simple(top_of_cmd_stack(), token);
               }else{
                   command_t tmp = parse_as_simple(NULL, token);
@@ -321,37 +372,70 @@ make_command_stream (int (*get_next_byte) (void *),
 		              	  	  		break;
 		              	  	  top--;		
 		              	  }
-		              	  if (top < 0)
-		              	  		evaluate();
+		              	  printf("top %d\n",top);
+		              	  if (top < 0){
+		              	  		cmd_stream->next = initiate_command_stream();
+								cmd_stream = cmd_stream->next;
+								cmd_stream->command = evaluateCmd();
+						  }
 		              	  else
-		              	  		pop_op_stack();
-		              	  				
+		              	  		pop_op_stack();		              	  				
 		              }
 		              else{
 		              	  push_to_op_stack(token_type);
 		              }
 		              break;
-                  case THEN:
-                      switch(top_of_op_stack()){
-                          case PIPE:
-                              parse_as_pipe;
-                              break;
-                          case SEMICOLON:
-                              parse_as_colon;
-                              break;
-                          case If:
-                              //fine here!
-                              break;
-                          default:
-                              //may be error
-                      }
-                      break;   
+				  case PIPE:
+					 	if (top_of_op_stack() == PIPE){
+				     		pop_op_stack();
+				     		tmp2 = pop_cmd_stack();
+							tmp1 = pop_cmd_stack();
+							res  = parse_as_pipe(tmp1,tmp2);
+							push_to_cmd_stack(res);
+						}
+						push_to_op_stack(token_type);
+				 		break;
+				  case SEMICOLON:
+				 		if (top_of_op_stack() == PIPE){
+				 			pop_op_stack();
+				     		tmp2 = pop_cmd_stack();
+							tmp1 = pop_cmd_stack();
+							res  = parse_as_pipe(tmp1,tmp2);
+							push_to_cmd_stack(res);
+						}
+				 		else{
+				   			if (top_of_op_stack() == SEMICOLON && last_push_type == OTHERS){
+				   				pop_op_stack();
+				     			tmp2 = pop_cmd_stack();
+								tmp1 = pop_cmd_stack();
+								res  = parse_as_sequence(tmp1,tmp2);
+								push_to_cmd_stack(res);
+							}
+				 		}
+						push_to_op_stack(token_type);
+				 		break;
+
+                  // case THEN:
+                  //     switch(top_of_op_stack()){
+                  //         case PIPE:
+                  //             parse_as_pipe;
+                  //             break;
+                  //         case SEMICOLON:
+                  //             parse_as_sequence;
+                  //             break;
+                  //         case IF:
+                  //             //fine here!
+                  //             break;
+                  //         default:
+                  //             //may be error
+                  //     }
+                  //     break;   
              }
           }
       }
       printf("top of op stack: %d\n", op_stack_top);
       printf("top of cmd stack: %d\n", cmd_stack_top);
-      last_token_type = token_type;
+      last_push_type = token_type;
   } 
 
   return head;
