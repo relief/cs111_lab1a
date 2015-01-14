@@ -88,6 +88,11 @@ char *get_next_token(int (*get_next_byte) (void *),
     }
 
     char c = get_next_byte(get_next_byte_argument);
+	
+    if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') && !(c == '!' || c == '%' || c == '+' || c == ',' || c == '-' || c == '.' || c == '/' || c == ':' || c == '@' || c == '^' || c == '_')) {
+	printf("HERE\n");
+	error(1, 0, "Unrecognizable character entered.");
+    }
 
     if (c == '#') {
         //ignore comments
