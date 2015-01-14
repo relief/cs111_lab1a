@@ -1,21 +1,38 @@
-a | b
+true
 
-a; b
+g++ -c foo.c
 
-a ; b ; d | c
+: : :
 
-if if a then c ; d fi then b fi ; a | c
+if cat < /etc/passwd | tr a-z A-Z | sort -u; then :; else echo sort failed!; fi
 
-a<b>c|d<e>f|g<h>
+a b<c > d
 
-while a do b done
+if cat < /etc/passwd | tr a-z A-Z | sort -u > out
+then :
+else echo sort failed!
+fi
 
-until a do b done
+if
+  if a;a;a; then b; else :; fi
+then
 
-until a do u done
+ if c
+  then if d | e; then f; fi
+ fi
+fi
 
-(testing)
+g<h
 
-while b do p done ; (well) t
+while
+  while
+    until :; do echo yoo hoo!; done
+    false
+  do (a|b)
+  done >f
+do
+  :>g
+done
 
-1<3
+# Another weird example: nobody would ever want to run this.
+a<b>c|d<e>f|g<h>i

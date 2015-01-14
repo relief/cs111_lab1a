@@ -127,6 +127,11 @@ char *get_next_token(int (*get_next_byte) (void *),
         while (c != '\n' && c != EOF) {
             c = get_next_byte(get_next_byte_argument);
         }
+        if (c == EOF){
+        	token[0] = EOF;
+        	token[1] = '\0';
+        	return token;
+        }
         c = get_next_byte(get_next_byte_argument);
     }
 
@@ -370,10 +375,23 @@ make_command_stream (int (*get_next_byte) (void *),
 
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
-      if (*token == EOF){
-      	  printf("see end of file\n");
+      if (*token == EOF){   
+      	  if (top_of_op_stack() == NEWLINE)
+                pop_op_stack();
+      	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+				evaluateOnce();
+		  }
+		  
+		  if (op_stack_top > 0 || cmd_stack_top > 0){
+		  		error(1,0,"Something wrong before EOF.");
+		  }
+		  if (cmd_stack_top == 0){
+			  cmd_stream->next = initiate_command_stream();
+			  cmd_stream = cmd_stream->next;
+			  cmd_stream->command = pop_cmd_stack();
+		  }
       	  break;
-      }
+      }      
       if (*token == ' ' || token[0] == '\0')
           continue; //ignore spaces
       printf("Got token: %s\n",token);
