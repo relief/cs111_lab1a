@@ -206,6 +206,7 @@ enum operator_type top_of_op_stack(){
         return -1;
     return op_stack[op_stack_top];
 }
+
 command_t parse_as_simple(command_t cmd0, char* new_word){
     char *new_word_part = (char *)malloc(strlen(new_word)+1);
     strcpy(new_word_part,new_word);
@@ -224,7 +225,49 @@ command_t parse_as_simple(command_t cmd0, char* new_word){
     }
 }
 
-command_stream_t
+command_t parse_as_pipe(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(PIPE_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2; 
+	return cmd;
+}
+
+command_t parse_as_sequence(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(SEQUENCE_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2; 
+	return cmd;
+}
+
+command_t parse_as_subshell(command_t cmd0){
+	command_t cmd = initiate_command(SUBSHELL_COMMAND);
+	cmd->u.command[0] = cmd0;
+	return cmd;
+}
+
+command_t parse_as_if(command_t cmd1, command_t cmd2, command_t cmd3){
+	command_t cmd = initiate_command(IF_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	if (cmd3 != NULL) 
+		cmd->u.command[2] = cmd3;
+	return cmd;
+}
+
+command_t parse_as_until(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(UNTIL_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	return cmd;
+}
+
+command_t parse_as_while(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(WHILE_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	return cmd;
+}
+
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
 {
@@ -295,10 +338,10 @@ make_command_stream (int (*get_next_byte) (void *),
                           case PIPE:
                               parse_as_pipe;
                               break;
-                          case COLON:
-                              parse_as_colon;
+                          case SEMICOLON:
+                              parse_as_sequence;
                               break;
-                          case If:
+                          case IF:
                               //fine here!
                               break;
                           default:
