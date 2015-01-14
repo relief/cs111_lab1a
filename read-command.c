@@ -42,11 +42,12 @@ struct command_stream
 };
 
 enum operator_type op_stack[MAX_SIZEOF_STACK];
+enum operator_type op;
 command_t cmd_stack[MAX_SIZEOF_STACK];
 int op_stack_top = -1;
 int cmd_stack_top = -1;
 
-command_t tmp1, tmp2, tmp3, res;
+command_t tmp0, tmp1, tmp2, tmp3, res;
 char *ctmp;
 enum operator_type last_push_type,token_type;
 
@@ -273,6 +274,7 @@ command_t parse_as_while(command_t cmd1, command_t cmd2){
 void evaluateOnce(){
 	tmp2 = pop_cmd_stack();
 	tmp1 = pop_cmd_stack();
+
 	switch (pop_op_stack()){
 		case PIPE:	
 			res = parse_as_pipe(tmp1,tmp2);
@@ -293,13 +295,13 @@ void evaluateOnce(){
         case DO:
             op = pop_op_stack(); // pop WHILE or UNTIL
             if (op == WHILE)
-                res = parse_as_if(tmp1,tmp2,NULL);
+                res = parse_as_while(tmp1,tmp2);
             else if (op == UNTIL)
-                res = parse_as_until(tmp1,tmp2,NULL);
+                res = parse_as_until(tmp1,tmp2);
             break;
         case LEFT_PAREN:
             pop_op_stack(); // pop LEFT_PAREN
-            res = parse_as_subshell(tmp1,NULL,NULL);
+            res = parse_as_subshell(tmp1);
             break;
         default:
             error(1, 0, "Something went wrong in evaluateOnce");
