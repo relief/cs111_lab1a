@@ -301,7 +301,9 @@ void evaluateOnce(){
             break;
         case LEFT_PAREN:
             pop_op_stack(); // pop LEFT_PAREN
-            res = parse_as_subshell(tmp1);
+	    printf("just parsed subshell\n");
+            res = parse_as_subshell(tmp2);
+	    push_to_cmd_stack(tmp1);
             break;
         default:
             error(1, 0, "Something went wrong in evaluateOnce");
@@ -311,7 +313,7 @@ void evaluateOnce(){
 command_t evaluateCmd(){
 	while (top_of_op_stack()){
 		      printf("top of op stack: %d\n", op_stack_top);
-      printf("top of cmd stack: %d\n", cmd_stack_top);
+      printf("top of cmd stack: %d\n", cmd_stack_top->type);
 
 		switch (pop_op_stack())
 		{
@@ -334,7 +336,7 @@ command_t evaluateCmd(){
 				break;
 		}
 	}
-	printf("cmd_stack_top %d\n",cmd_stack_top);
+	printf("cmd_stack_top %d\n",cmd_stack_top->type);
 	if (cmd_stack_top == 0){
 		return pop_cmd_stack();
 	}else
