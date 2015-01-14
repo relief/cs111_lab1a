@@ -67,38 +67,6 @@ command_t initiate_command(enum command_type type){
   return cmd;
 }
 
-/* Parse a string of command into struct type command */
-// command_t parseCmd(char cmd[][MAX_SIZE_OF_COMMAND]){
-//   command_t c = initiate_command();
-//   c->type = determineType(cmd);
-//   switch (c->type){
-//      case SIMPLE_COMMAND:
-//           c->u.word = (void *)malloc(MAX_LINE_OF_SINGLE_COMMAND);
-//           *(c->u.word) = (char *)malloc(strlen(*cmd)+1);
-//           strcpy(*(c->u.word),*cmd);
-//          // printf("%d\n",c->u.word);
-//           //char **w = c->u.word;
-// //          printf ("%*s%s", 2, "", *w);
-//      //*(c->u.word+1) = NULL;
-//      // pipe: c->command[0] = parseCmd(cmd[leftpart]);
-//      //       c->command[1] = parseCmd(cmd[rightpart]);
-//           break;
-//      case IF_COMMAND:
-//           break;
-//      case PIPE_COMMAND:
-//           break;
-//      case SEQUENCE_COMMAND:
-//           break;
-//      case SUBSHELL_COMMAND:
-//           break;
-//      case UNTIL_COMMAND:
-//           break;
-//      case WHILE_COMMAND:
-//           break;
-//   }
-//   return c;
-// }
-
 //next step: ignore tokens that are single spaces, interpret just one newline as a ';'
 char *get_next_token(int (*get_next_byte) (void *),
                void *get_next_byte_argument)
@@ -328,37 +296,36 @@ void evaluateOnce(){
             error(1, 0, "Something went wrong in evaluateOnce");
 	}
 	push_to_cmd_stack(res);
+	last_push_type = OTHERS;
 }
-command_t evaluateCmd(){
-	while (top_of_op_stack()){
+// command_t evaluateCmd(){
+// 	while (top_of_op_stack()){
 
-		switch (pop_op_stack())
-		{
-			case PIPE:
-				tmp2 = pop_cmd_stack();
-				tmp1 = pop_cmd_stack();
-				res  = parse_as_pipe(tmp1,tmp2);
-				push_to_cmd_stack(res);
-				last_push_type = OTHERS;
-				break;
-			case SEMICOLON:
-				tmp2 = pop_cmd_stack();
-				tmp1 = pop_cmd_stack();
-				res  = parse_as_sequence(tmp1,tmp2);
-				push_to_cmd_stack(res);
-				last_push_type = OTHERS;
-				break;
-			case STDIN:
-			case STDOUT:	
-				break;
-		}
-	}
-	printf("cmd_stack_top %d\n",cmd_stack_top->type);
-	if (cmd_stack_top == 0){
-		return pop_cmd_stack();
-	}else
-		error (1, 0, "Something went wrong in evaluateCmd");
-}
+// 		switch (pop_op_stack())
+// 		{
+// 			case PIPE:
+// 				tmp2 = pop_cmd_stack();
+// 				tmp1 = pop_cmd_stack();
+// 				res  = parse_as_pipe(tmp1,tmp2);
+// 				push_to_cmd_stack(res);
+// 				last_push_type = OTHERS;
+// 				break;
+// 			case SEMICOLON:
+
+// 				tmp2 = pop_cmd_stack();
+// 				tmp1 = pop_cmd_stack();
+// 				res  = parse_as_sequence(tmp1,tmp2);
+// 				push_to_cmd_stack(res);
+// 				last_push_type = OTHERS;
+// 				break;
+// 		}
+// 	}
+// 	printf("cmd_stack_top %d\n",cmd_stack_top);
+// 	if (cmd_stack_top == 0){
+// 		return pop_cmd_stack();
+// 	}else
+// 		error (1, 0, "Something went wrong in evaluateCmd");
+// }
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
@@ -376,6 +343,9 @@ make_command_stream (int (*get_next_byte) (void *),
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
       if (*token == EOF){   
+      	printf("---------end of file ---------\n");
+      	      printf("top of op stack: %d\n", op_stack_top);
+      	printf("top of cmd stack: %d\n", cmd_stack_top);
       	  if (top_of_op_stack() == NEWLINE)
                 pop_op_stack();
       	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
@@ -455,28 +425,37 @@ make_command_stream (int (*get_next_byte) (void *),
                       break;
                       
                   case NEWLINE:         
-                      if (top_of_op_stack() == NEWLINE)
-                      {
-		              	  // check if it is not finished
-                      	  int top = op_stack_top;
-		              	  while (top >= 0){
-		              	  	  enum operator_type s = op_stack[top];
-		              	  	  if (s == IF || s == THEN || s == ELSE || s == WHILE || s == UNTIL || s == DO || s == LEFT_PAREN)
-		              	  	  		break;
-		              	  	  top--;		
-		              	  }
-		              	  printf("top %d\n",top);
-		              	  if (top < 0){
-		              	  		cmd_stream->next = initiate_command_stream();
-								cmd_stream = cmd_stream->next;
-								cmd_stream->command = evaluateCmd();
+                      switch (top_of_op_stack()){
+	                      case NEWLINE:
+								// check if it is not finished
+	                      {
+								int top = op_stack_top;
+								while (top >= 0){
+									  enum operator_type s = op_stack[top];
+									  if (s == IF || s == THEN || s == ELSE || s == WHILE || s == UNTIL || s == DO || s == LEFT_PAREN)
+									  		break;
+									  top--;		
+								}
+								//printf("top %d\n",top);
+								if (top < 0){
+										if (op_stack_top > 0 || cmd_stack_top > 0){
+								  		error(1,0,"Something wrong before EOF.");
+								  }
+								  if (cmd_stack_top == 0){
+									  cmd_stream->next = initiate_command_stream();
+									  cmd_stream = cmd_stream->next;
+									  cmd_stream->command = pop_cmd_stack();
+								  }
+								}
+								else
+										pop_op_stack();		              	  				
 						  }
-		              	  else
-		              	  		pop_op_stack();		              	  				
-		              }
-		              else{
-		              	  push_to_op_stack(token_type);
-		              }
+				             	break;
+				          case SEMICOLON:
+				          		pop_op_stack();
+			              default:
+			              		push_to_op_stack(token_type);
+			          }
 		              break;
                       
 				  case PIPE:
@@ -499,6 +478,8 @@ make_command_stream (int (*get_next_byte) (void *),
 				 		break;
                       
                   case RIGHT_PAREN:
+                      if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+                  	  	  pop_op_stack();
                       if (top_of_op_stack() == NEWLINE)
                           pop_op_stack();
                       if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
@@ -509,6 +490,8 @@ make_command_stream (int (*get_next_byte) (void *),
                       break;
 
                   case THEN:
+                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+                  	  	  pop_op_stack();
                   	  if (top_of_op_stack() == NEWLINE)
                   	  		pop_op_stack();
                   	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
@@ -519,6 +502,8 @@ make_command_stream (int (*get_next_byte) (void *),
                       break;
                       
                   case ELSE:
+                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+                  	  	  pop_op_stack();
                       if (top_of_op_stack() == NEWLINE)
                           pop_op_stack();
                       if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
@@ -529,6 +514,8 @@ make_command_stream (int (*get_next_byte) (void *),
                       break;
                       
                   case FI:
+                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+                  	  	  pop_op_stack();
                   	  if (top_of_op_stack() == NEWLINE)
                   	  		pop_op_stack();
                   	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
@@ -539,6 +526,8 @@ make_command_stream (int (*get_next_byte) (void *),
                       break;
                       
                   case DO:
+                      if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+                  	  	  pop_op_stack();
                       if (top_of_op_stack() == NEWLINE)
                           pop_op_stack();
                       if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
@@ -549,6 +538,10 @@ make_command_stream (int (*get_next_byte) (void *),
                       break;
                       
                   case DONE:
+                      if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+                  	  	  pop_op_stack();
+                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+                  	  	  pop_op_stack();
                       if (top_of_op_stack() == NEWLINE)
                           pop_op_stack();
                       if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
