@@ -122,20 +122,22 @@ char *get_next_token(int (*get_next_byte) (void *),
 
     char c = get_next_byte(get_next_byte_argument);
 
-    if (c == EOF)
-        return 0;
-
     if (c == '#') {
         //ignore comments
         while (c != '\n' && c != EOF) {
             c = get_next_byte(get_next_byte_argument);
+        }
+        if (c == EOF){
+        	token[0] = EOF;
+        	token[1] = '\0';
+        	return token;
         }
         c = get_next_byte(get_next_byte_argument);
     }
 
     while (c != EOF) {
 	//printf("At character: %c\n", c);
-        if (c == ' ' || c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')') {
+        if (c == ' ' || c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')' ) {
             token[i++] = '\0';
             operator = c; // we also need to return the current operator char
             return token;
@@ -147,6 +149,7 @@ char *get_next_token(int (*get_next_byte) (void *),
     }
     
     token[i] = '\0';
+    operator = c; // we also need to return the current operator char
     return token;
 }
 
@@ -271,6 +274,22 @@ command_t parse_as_while(command_t cmd1, command_t cmd2){
 	cmd->u.command[1] = cmd2;
 	return cmd;
 }
+command_t parse_as_io(command_t cmd, char* in_redirection, char* out_redirection){
+	char *tmp;
+	if (in_redirection){
+		tmp = (char *)malloc(strlen(in_redirection)+1);
+		strcpy(tmp,in_redirection);
+		cmd->input = tmp;
+	}
+
+	if (out_redirection){
+		tmp = (char *)malloc(strlen(out_redirection)+1);
+		strcpy(tmp,out_redirection);
+		cmd->output = tmp;
+	}
+
+	return cmd;
+}
 void evaluateOnce(){
 	tmp2 = pop_cmd_stack();
 	tmp1 = pop_cmd_stack();
@@ -359,6 +378,23 @@ make_command_stream (int (*get_next_byte) (void *),
 
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
+      if (*token == EOF){   
+      	  if (top_of_op_stack() == NEWLINE)
+                pop_op_stack();
+      	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+				evaluateOnce();
+		  }
+		  
+		  if (op_stack_top > 0 || cmd_stack_top > 0){
+		  		error(1,0,"Something wrong before EOF.");
+		  }
+		  if (cmd_stack_top == 0){
+			  cmd_stream->next = initiate_command_stream();
+			  cmd_stream = cmd_stream->next;
+			  cmd_stream->command = pop_cmd_stack();
+		  }
+      	  break;
+      }      
       if (*token == ' ' || token[0] == '\0')
           continue; //ignore spaces
       printf("Got token: %s\n",token);
@@ -382,8 +418,19 @@ make_command_stream (int (*get_next_byte) (void *),
               if (last_push_type == OTHERS){
                   parse_as_simple(top_of_cmd_stack(), token);
               }else{
-                  command_t tmp = parse_as_simple(NULL, token);
-                  push_to_cmd_stack(tmp);
+              	  if (top_of_op_stack() == STDIN){
+              	  		push_to_cmd_stack(parse_as_io(pop_cmd_stack(),token,NULL));
+              	  		pop_op_stack();
+              	  }else
+	              	  if (top_of_op_stack() == STDOUT)
+	              	  {
+	              	  		push_to_cmd_stack(parse_as_io(pop_cmd_stack(),NULL,token));
+	              	  		pop_op_stack();
+	              	  }else{
+	              	  		command_t tmp = parse_as_simple(NULL, token);
+                  			push_to_cmd_stack(tmp);
+	              	  }
+                  		
               }
           }
       }
@@ -394,6 +441,15 @@ make_command_stream (int (*get_next_byte) (void *),
           else{
               switch(token_type)
               {
+              	  case STDIN:
+              	  case STDOUT:
+              	  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+					 		evaluateOnce();
+					  }
+              	      if (last_push_type != OTHERS)
+              	      		error(1, 0, "Something wrong with io_redirection!");
+              	      push_to_op_stack(token_type);
+              	  	  break;
                   case LEFT_PAREN:
                   case IF:
                   case WHILE:
