@@ -362,7 +362,7 @@ make_command_stream (int (*get_next_byte) (void *),
       token_type = get_token_type(token);
       printf("token_type %d\n",token_type);
       //printf("token_type: %d",token_type);
-      if (last_push_type == NEWLINE && token_type != NEWLINE)
+      if (last_push_type == NEWLINE && token_type == OTHERS)
       {
       	  	  pop_op_stack();
       	  	  push_to_op_stack(SEMICOLON);
@@ -497,8 +497,10 @@ make_command_stream (int (*get_next_byte) (void *),
                           pop_op_stack();
                       if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
                           evaluateOnce();
-                      if (top_of_op_stack() != DO)
+                      if (top_of_op_stack() != DO) {
+			  //printf("Last operator: %d\n", top_of_op_stack());
                           error (1, 0, "Something wrong before DONE.");
+		      }
                       evaluateOnce();
                       break;
              }
@@ -506,6 +508,7 @@ make_command_stream (int (*get_next_byte) (void *),
       }
       printf("top of op stack: %d\n", op_stack_top);
       printf("top of cmd stack: %d\n", cmd_stack_top);
+      //printf("Last push type: %d\n", token_type);
       last_push_type = token_type;
   } 
 
