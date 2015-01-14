@@ -270,7 +270,14 @@ command_t parse_as_while(command_t cmd1, command_t cmd2){
 	cmd->u.command[1] = cmd2;
 	return cmd;
 }
-void evaluateOnce(){
+command_t parse_as_io(command_t cmd, char* in_redirection, char* out_redirection){
+	if (in_redirection)
+		cmd->input = in_redirection;
+	if (out_redirection)
+		cmd->output= out_redirection;
+	return cmd;
+}
+void evaluateOnce(enum ){
 	tmp2 = pop_cmd_stack();
 	tmp1 = pop_cmd_stack();
 	switch (pop_op_stack()){
@@ -284,6 +291,7 @@ void evaluateOnce(){
 			pop_op_stack(); // pop IF
 			res = parse_as_if(tmp1,tmp2,NULL);
 			break;
+
 	}
 	push_to_cmd_stack(res);
 }
@@ -358,8 +366,19 @@ make_command_stream (int (*get_next_byte) (void *),
               if (last_push_type == OTHERS){
                   parse_as_simple(top_of_cmd_stack(), token);
               }else{
-                  command_t tmp = parse_as_simple(NULL, token);
-                  push_to_cmd_stack(tmp);
+              	  if (top_of_op_stack() == STDIN){
+              	  		push_cmd_stack(parse_as_io(pop_cmd_stack(),token,NULL));
+              	  		pop_op_stack();
+              	  }else
+	              	  if (top_of_op_stack() == STDOUT)
+	              	  {
+	              	  		push_cmd_stack(parse_as_io(pop_cmd_stack(),token,NULL));
+	              	  		pop_op_stack();
+	              	  }else{
+	              	  		command_t tmp = parse_as_simple(NULL, token);
+                  			push_to_cmd_stack(tmp);
+	              	  }
+                  		
               }
           }
       }
@@ -370,6 +389,15 @@ make_command_stream (int (*get_next_byte) (void *),
           else{
               switch(token_type)
               {
+              	  case STDIN:
+              	  case STDOUT:
+              	  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+					 		evaluateOnce();
+					  }
+              	      if (last_push_type != OTHERS)
+              	      		error(1, 0, "Something wrong with io_redirection!");
+              	      push_to_op_stack(token_type);
+              	  	  break;
                   case LEFT_PAREN:
                   case IF:
                   case WHILE:
