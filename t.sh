@@ -1,3 +1,7 @@
+while
 
-    until :; do echo yoo hoo!; done
     false
+do (a|b)
+done >f
+
+

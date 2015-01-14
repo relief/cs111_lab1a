@@ -265,6 +265,7 @@ void evaluateOnce(){
 	switch (pop_op_stack()){
 		case PIPE:	
 			res = parse_as_pipe(tmp1,tmp2);
+			printf("just parsed pipe\n");
 			break;
 		case SEMICOLON:
 			res = parse_as_sequence(tmp1,tmp2);
@@ -287,10 +288,10 @@ void evaluateOnce(){
                 res = parse_as_until(tmp1,tmp2);
             break;
         case LEFT_PAREN:
-            pop_op_stack(); // pop LEFT_PAREN
+            //pop_op_stack(); // pop LEFT_PAREN
 	    printf("just parsed subshell\n");
-            res = parse_as_subshell(tmp2);
 	    push_to_cmd_stack(tmp1);
+            res = parse_as_subshell(tmp2);
             break;
         default:
             error(1, 0, "Something went wrong in evaluateOnce");
@@ -298,34 +299,6 @@ void evaluateOnce(){
 	push_to_cmd_stack(res);
 	last_push_type = OTHERS;
 }
-// command_t evaluateCmd(){
-// 	while (top_of_op_stack()){
-
-// 		switch (pop_op_stack())
-// 		{
-// 			case PIPE:
-// 				tmp2 = pop_cmd_stack();
-// 				tmp1 = pop_cmd_stack();
-// 				res  = parse_as_pipe(tmp1,tmp2);
-// 				push_to_cmd_stack(res);
-// 				last_push_type = OTHERS;
-// 				break;
-// 			case SEMICOLON:
-
-// 				tmp2 = pop_cmd_stack();
-// 				tmp1 = pop_cmd_stack();
-// 				res  = parse_as_sequence(tmp1,tmp2);
-// 				push_to_cmd_stack(res);
-// 				last_push_type = OTHERS;
-// 				break;
-// 		}
-// 	}
-// 	printf("cmd_stack_top %d\n",cmd_stack_top);
-// 	if (cmd_stack_top == 0){
-// 		return pop_cmd_stack();
-// 	}else
-// 		error (1, 0, "Something went wrong in evaluateCmd");
-// }
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
@@ -425,7 +398,8 @@ make_command_stream (int (*get_next_byte) (void *),
                       break;
                       
                   case NEWLINE:         
-                      switch (top_of_op_stack()){
+                      switch (top_of_op_stack())
+                      {
 	                      case NEWLINE:
 								// check if it is not finished
 	                      {
@@ -448,7 +422,7 @@ make_command_stream (int (*get_next_byte) (void *),
 								  }
 								}
 								else
-										pop_op_stack();		              	  				
+									pop_op_stack();		              	  				
 						  }
 				             	break;
 				          case SEMICOLON:
