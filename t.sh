@@ -10,6 +10,6 @@ until a do u done
 
 (testing)
 
-while b do p done ; (well) t
+#while b do p done ; (well) t
 
 1<3
