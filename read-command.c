@@ -278,6 +278,7 @@ void evaluateOnce(){
 	switch (pop_op_stack()){
 		case PIPE:	
 			res = parse_as_pipe(tmp1,tmp2);
+			printf("just parsed pipe\n");
 			break;
 		case SEMICOLON:
 			res = parse_as_sequence(tmp1,tmp2);
@@ -300,10 +301,10 @@ void evaluateOnce(){
                 res = parse_as_until(tmp1,tmp2);
             break;
         case LEFT_PAREN:
-            pop_op_stack(); // pop LEFT_PAREN
+            //pop_op_stack(); // pop LEFT_PAREN
 	    printf("just parsed subshell\n");
-            res = parse_as_subshell(tmp2);
 	    push_to_cmd_stack(tmp1);
+            res = parse_as_subshell(tmp2);
             break;
         default:
             error(1, 0, "Something went wrong in evaluateOnce");
@@ -313,7 +314,7 @@ void evaluateOnce(){
 command_t evaluateCmd(){
 	while (top_of_op_stack()){
 		      printf("top of op stack: %d\n", op_stack_top);
-      printf("top of cmd stack: %d\n", cmd_stack_top->type);
+      printf("top of cmd stack: %d\n", cmd_stack_top);
 
 		switch (pop_op_stack())
 		{
@@ -336,7 +337,7 @@ command_t evaluateCmd(){
 				break;
 		}
 	}
-	printf("cmd_stack_top %d\n",cmd_stack_top->type);
+	//printf("cmd_stack_top %d\n",cmd_stack_top->type);
 	if (cmd_stack_top == 0){
 		return pop_cmd_stack();
 	}else
@@ -411,7 +412,7 @@ make_command_stream (int (*get_next_byte) (void *),
 		              	  	  		break;
 		              	  	  top--;		
 		              	  }
-		              	  printf("top %d\n",top);
+		              	  printf("top in NEWLINE case: %d\n",top);
 		              	  if (top < 0){
 		              	  		cmd_stream->next = initiate_command_stream();
 								cmd_stream = cmd_stream->next;
