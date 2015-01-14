@@ -89,10 +89,15 @@ char *get_next_token(int (*get_next_byte) (void *),
 
     char c = get_next_byte(get_next_byte_argument);
 	
-    if (!(c >= 'a' && c <= 'z') && !(c >= 'A' && c <= 'Z') && !(c >= '0' && c <= '9') && !(c == '!' || c == '%' || c == '+' || c == ',' || c == '-' || c == '.' || c == '/' || c == ':' || c == '@' || c == '^' || c == '_')) {
-	printf("HERE\n");
-	error(1, 0, "Unrecognizable character entered.");
-    }
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '!' || c == '%' 
+    || c == '+' || c == ',' || c == '-' || c == '.' || c == '/' || c == ':' || c == '@' || c == '^' || c == '_'
+    || c == ' ' || c == '\t'|| c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')' || c==EOF
+    || c == '#')
+    {
+	 // printf("HERE\n");
+	
+    }else
+    	error(1, 0, "Unrecognizable character entered.");
 
     if (c == '#') {
         //ignore comments
@@ -274,28 +279,27 @@ void evaluateOnce(){
 			break;
 		case SEMICOLON:
 			if (tmp1 == NULL)
-				error(1,0,"Something wrong with pipe");
+				error(1,0,"Something wrong with ;");
 			res = parse_as_sequence(tmp1,tmp2);
 			break;
 		case THEN:
 			if (tmp1 == NULL)
-				error(1,0,"Something wrong with pipe");
-			if (cmd_stack_top < 0)
-				error(1,0,"error before then");
+				error(1,0,"Something wrong with then");
 			pop_op_stack(); // pop IF
 			res = parse_as_if(tmp1,tmp2,NULL);
 			break;
         case ELSE:
-        	if (tmp1 == NULL)
-				error(1,0,"Something wrong with pipe");
+        	
             pop_op_stack(); // pop THEN
             pop_op_stack(); // pop IF
             tmp0 = pop_cmd_stack();
+            if (tmp0 == NULL)
+				error(1,0,"Something wrong with else");
             res = parse_as_if(tmp0,tmp1,tmp2);
             break;
         case DO:
         	if (tmp1 == NULL)
-				error(1,0,"Something wrong with pipe");
+				error(1,0,"Something wrong with do");
             op = pop_op_stack(); // pop WHILE or UNTIL
             if (op == WHILE)
                 res = parse_as_while(tmp1,tmp2);
@@ -306,7 +310,7 @@ void evaluateOnce(){
             //pop_op_stack(); // pop LEFT_PAREN
 	    //printf("just parsed subshell\n");
 	    	if (tmp2 == NULL)
-				error(1,0,"Something wrong with pipe");
+				error(1,0,"Something wrong with subshell");
 	    	if (tmp1 != NULL)
 	    	{
 	    		push_to_cmd_stack(tmp1);
@@ -427,6 +431,8 @@ make_command_stream (int (*get_next_byte) (void *),
       else
       {
           if (op_stack_top < 0){
+          	  if (cmd_stack_top <0 && token_type == SEMICOLON)
+          	  	  error(1,0,"error around semicolon");
 	          if (cmd_stack_top >= 0 || token_type != NEWLINE){
 	              push_to_op_stack(token_type);
 	              last_push_type = token_type;
