@@ -270,8 +270,23 @@ command_t parse_as_while(command_t cmd1, command_t cmd2){
 	cmd->u.command[1] = cmd2;
 	return cmd;
 }
-
-
+void evaluateOnce(){
+	tmp2 = pop_cmd_stack();
+	tmp1 = pop_cmd_stack();
+	switch (pop_op_stack()){
+		case PIPE:	
+			res  = parse_as_pipe(tmp1,tmp2);
+			break;
+		case SEMICOLON:
+			res  = parse_as_sequence(tmp1,tmp2);
+			break;
+		case THEN:
+			pop_op_stack(); // pop IF
+			res = parse_as_if(tmp1,tmp2,NULL);
+			break;
+	}
+	push_to_cmd_stack(res);
+}
 command_t evaluateCmd(){
 	while (top_of_op_stack()){
 		      printf("top of op stack: %d\n", op_stack_top);
@@ -387,49 +402,42 @@ make_command_stream (int (*get_next_byte) (void *),
 		              break;
 				  case PIPE:
 					 	if (top_of_op_stack() == PIPE){
-				     		pop_op_stack();
-				     		tmp2 = pop_cmd_stack();
-							tmp1 = pop_cmd_stack();
-							res  = parse_as_pipe(tmp1,tmp2);
-							push_to_cmd_stack(res);
+					 		evaluateOnce();
 						}
 						push_to_op_stack(token_type);
 				 		break;
 				  case SEMICOLON:
 				 		if (top_of_op_stack() == PIPE){
-				 			pop_op_stack();
-				     		tmp2 = pop_cmd_stack();
-							tmp1 = pop_cmd_stack();
-							res  = parse_as_pipe(tmp1,tmp2);
-							push_to_cmd_stack(res);
+				 			evaluateOnce();
 						}
 				 		else{
 				   			if (top_of_op_stack() == SEMICOLON && last_push_type == OTHERS){
-				   				pop_op_stack();
-				     			tmp2 = pop_cmd_stack();
-								tmp1 = pop_cmd_stack();
-								res  = parse_as_sequence(tmp1,tmp2);
-								push_to_cmd_stack(res);
+				   				evaluateOnce();
 							}
 				 		}
 						push_to_op_stack(token_type);
 				 		break;
 
-                  // case THEN:
-                  //     switch(top_of_op_stack()){
-                  //         case PIPE:
-                  //             parse_as_pipe;
-                  //             break;
-                  //         case SEMICOLON:
-                  //             parse_as_sequence;
-                  //             break;
-                  //         case IF:
-                  //             //fine here!
-                  //             break;
-                  //         default:
-                  //             //may be error
-                  //     }
-                  //     break;   
+                  case THEN:
+                  	  if (top_of_op_stack() == NEWLINE)
+                  	  		pop_op_stack();
+                  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
+                            evaluateOnce();
+                      if (top_of_op_stack() != IF)
+                              error (1, 0, "Something wrong before THEN.");
+           
+                      push_to_op_stack(THEN);
+                      break;   
+                  case FI:
+                  	  if (top_of_op_stack() == NEWLINE)
+                  	  		pop_op_stack();
+                  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
+                            evaluateOnce();
+                      if (top_of_op_stack() != THEN)
+                              error (1, 0, "Something wrong before THEN.");
+                      
+                      evaluateOnce();
+                      break;   
              }
           }
       }
