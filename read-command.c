@@ -224,6 +224,35 @@ command_t parse_as_simple(command_t cmd0, char* new_word){
     }
 }
 
+command_t evaluateCmd(){
+	command_t tmp1, tmp2, tmp3, res;
+	char *chartmp;
+	while (top_of_op_stack()){
+		switch (pop_op_stack())
+		{
+			case PIPE:
+				tmp2 = pop_cmd_stack();
+				tmp1 = pop_cmd_stack();
+				res  = parse_as_pipe(tmp1,tmp2);
+				break;
+			case SEMICOLON:
+				tmp2 = pop_cmd_stack();
+				tmp1 = pop_cmd_stack();
+				res  = parse_as_semicolon(tmp1,tmp2);
+				break;
+			case STDIN:
+			case STDOUT:	
+		}
+	}
+	if (cmd_stack_top == 0){
+		pop_op_stack(op_stack,&op_stack_top);
+		cmd_stream->next = initiate_command_stream();
+		cmd_stream = cmd_stream->next;
+		cmd_stream->command = pop_cmd_stack();
+	}else
+		error (1, 0, "bad thing happen in evaluateCmd");
+
+}
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -282,20 +311,32 @@ make_command_stream (int (*get_next_byte) (void *),
                       push_to_op_stack(token_type);
                       break;
                   case NEWLINE:         
-                      if (top_of_op_stack() == NEWLINE && op_stack_top == 0 && cmd_stack_top == 0)
+                      if (top_of_op_stack() == NEWLINE)
                       {
-                          pop_op_stack(op_stack,&op_stack_top);
-                          cmd_stream->next = initiate_command_stream();
-                          cmd_stream = cmd_stream->next;
-                          cmd_stream->command = pop_cmd_stack();
-                      }
-                      break;
+		              	  // check if it is not finished
+                      	  int top = op_stack_top;
+		              	  while (top >= 0){
+		              	  	  enum operator_type s = op_stack[top];
+		              	  	  if (s == IF || s == THEN || s == ELSE || s == WHILE || s == UNTIL || s == DO || s == LEFT_PAREN)
+		              	  	  		break;
+		              	  	  top--;		
+		              	  }
+		              	  if (top < 0)
+		              	  		evaluate();
+		              	  else
+		              	  		pop_op_stack();
+		              	  				
+		              }
+		              else{
+		              	  push_to_op_stack(token_type);
+		              }
+		              break;
                   case THEN:
                       switch(top_of_op_stack()){
                           case PIPE:
                               parse_as_pipe;
                               break;
-                          case COLON:
+                          case SEMICOLON:
                               parse_as_colon;
                               break;
                           case If:
