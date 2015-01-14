@@ -275,15 +275,34 @@ void evaluateOnce(){
 	tmp1 = pop_cmd_stack();
 	switch (pop_op_stack()){
 		case PIPE:	
-			res  = parse_as_pipe(tmp1,tmp2);
+			res = parse_as_pipe(tmp1,tmp2);
 			break;
 		case SEMICOLON:
-			res  = parse_as_sequence(tmp1,tmp2);
+			res = parse_as_sequence(tmp1,tmp2);
 			break;
 		case THEN:
 			pop_op_stack(); // pop IF
 			res = parse_as_if(tmp1,tmp2,NULL);
 			break;
+        case ELSE:
+            pop_op_stack(); // pop THEN
+            pop_op_stack(); // pop IF
+            tmp0 = pop_cmd_stack();
+            res = parse_as_if(tmp0,tmp1,tmp2);
+            break;
+        case DO:
+            op = pop_op_stack(); // pop WHILE or UNTIL
+            if (op == WHILE)
+                res = parse_as_if(tmp1,tmp2,NULL);
+            else if (op == UNTIL)
+                res = parse_as_until(tmp1,tmp2,NULL);
+            break;
+        case LEFT_PAREN:
+            pop_op_stack(); // pop LEFT_PAREN
+            res = parse_as_subshell(tmp1,NULL,NULL);
+            break;
+        default:
+            error(1, 0, "Something went wrong in evaluateOnce");
 	}
 	push_to_cmd_stack(res);
 }
@@ -317,7 +336,7 @@ command_t evaluateCmd(){
 	if (cmd_stack_top == 0){
 		return pop_cmd_stack();
 	}else
-		error (1, 0, "bad thing happen in evaluateCmd");
+		error (1, 0, "Something went wrong in evaluateCmd");
 }
 
 command_stream_t
@@ -376,6 +395,7 @@ make_command_stream (int (*get_next_byte) (void *),
                   case UNTIL:
                       push_to_op_stack(token_type);
                       break;
+                      
                   case NEWLINE:         
                       if (top_of_op_stack() == NEWLINE)
                       {
@@ -400,12 +420,14 @@ make_command_stream (int (*get_next_byte) (void *),
 		              	  push_to_op_stack(token_type);
 		              }
 		              break;
+                      
 				  case PIPE:
 					 	if (top_of_op_stack() == PIPE){
 					 		evaluateOnce();
 						}
 						push_to_op_stack(token_type);
 				 		break;
+                      
 				  case SEMICOLON:
 				 		if (top_of_op_stack() == PIPE){
 				 			evaluateOnce();
@@ -417,6 +439,16 @@ make_command_stream (int (*get_next_byte) (void *),
 				 		}
 						push_to_op_stack(token_type);
 				 		break;
+                      
+                  case RIGHT_PAREN:
+                      if (top_of_op_stack() == NEWLINE)
+                          pop_op_stack();
+                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
+                          evaluateOnce();
+                      if (top_of_op_stack() != LEFT_PAREN)
+                          error (1, 0, "Something wrong before RIGHT PAREN.");
+                      evaluateOnce();
+                      break;
 
                   case THEN:
                   	  if (top_of_op_stack() == NEWLINE)
@@ -424,20 +456,49 @@ make_command_stream (int (*get_next_byte) (void *),
                   	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
                             evaluateOnce();
                       if (top_of_op_stack() != IF)
-                              error (1, 0, "Something wrong before THEN.");
-           
+                            error (1, 0, "Something wrong before THEN.");
                       push_to_op_stack(THEN);
-                      break;   
+                      break;
+                      
+                  case ELSE:
+                      if (top_of_op_stack() == NEWLINE)
+                          pop_op_stack();
+                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
+                          evaluateOnce();
+                      if (top_of_op_stack() != THEN)
+                          error (1, 0, "Something wrong before ELSE.");
+                      push_to_op_stack(ELSE);
+                      break;
+                      
                   case FI:
                   	  if (top_of_op_stack() == NEWLINE)
                   	  		pop_op_stack();
                   	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
                             evaluateOnce();
-                      if (top_of_op_stack() != THEN)
-                              error (1, 0, "Something wrong before THEN.");
-                      
+                      if (top_of_op_stack() != THEN && top_of_op_stack() != ELSE)
+                            error (1, 0, "Something wrong before FI.");
                       evaluateOnce();
-                      break;   
+                      break;
+                      
+                  case DO:
+                      if (top_of_op_stack() == NEWLINE)
+                          pop_op_stack();
+                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
+                          evaluateOnce();
+                      if (top_of_op_stack() != UNTIL && top_of_op_stack() != WHILE)
+                          error (1, 0, "Something wrong before DO.");
+                      push_to_op_stack(DO);
+                      break;
+                      
+                  case DONE:
+                      if (top_of_op_stack() == NEWLINE)
+                          pop_op_stack();
+                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
+                          evaluateOnce();
+                      if (top_of_op_stack() != DO)
+                          error (1, 0, "Something wrong before DONE.");
+                      evaluateOnce();
+                      break;
              }
           }
       }
