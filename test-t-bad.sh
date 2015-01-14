@@ -88,4 +88,4 @@ done
 exit $status
 ) || exit
 
-
+rm -fr "$tmp"
