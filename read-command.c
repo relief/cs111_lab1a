@@ -27,12 +27,13 @@
 #define MAX_SIZE_OF_COMMAND 1000
 #define MAX_SIZE_OF_SIMPLE_COMMAND 1000
 #define MAX_SIZEOF_STACK 1000
-const char IF_STR[] = "if";
+
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
 enum operator_type
 {
-    OTHERS, IF, THEN, ELSE, FI, SEMICOLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN, NEWLINE, STDIN, STDOUT
+    OTHERS, IF, THEN, ELSE, FI, SEMICOLON, PIPE, WHILE, UNTIL, DONE, DO, LEFT_PAREN, RIGHT_PAREN, NEWLINE, STDIN, STDOUT,
+    OR, FOR, IN, AND, CASE, ESAC, XOR, NOT, DOUBLE_SEMICOLON
 };
 
 struct command_stream
@@ -48,7 +49,6 @@ int op_stack_top = -1;
 int cmd_stack_top = -1;
 
 command_t tmp0, tmp1, tmp2, tmp3, res;
-char *ctmp;
 enum operator_type last_push_type,token_type;
 
 command_stream_t initiate_command_stream(){
@@ -92,7 +92,7 @@ char *get_next_token(int (*get_next_byte) (void *),
     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '!' || c == '%' 
     || c == '+' || c == ',' || c == '-' || c == '.' || c == '/' || c == ':' || c == '@' || c == '^' || c == '_'
     || c == ' ' || c == '\t'|| c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')' || c==EOF
-    || c == '#')
+    || c == '#' || c == '^' || c == '!' || c == '&')
     {
 	 // printf("HERE\n");
 	
@@ -131,6 +131,20 @@ char *get_next_token(int (*get_next_byte) (void *),
 }
 
 enum operator_type get_token_type(char *token){
+	if (strncmp(token,"&&",2) == 0)
+		return AND;
+    if (strncmp(token,"case",4) == 0)
+        return CASE;
+    if (strncmp(token,"esac",4) == 0)
+        return ESAC;
+    if (strncmp(token,"!",1) == 0)
+        return NOT;
+    if (strncmp(token,"^",1) == 0)
+        return XOR;
+    if (strncmp(token,"for",3) == 0)
+        return FOR;
+    if (strncmp(token,"in",2) == 0)
+        return IN;
     if (strncmp(token,"if",2) == 0)
         return IF;
     if (strncmp(token,"then",4) == 0)
@@ -168,6 +182,7 @@ enum operator_type get_token_type(char *token){
 void push_to_cmd_stack(command_t ele){
     cmd_stack_top = cmd_stack_top + 1;
     cmd_stack[cmd_stack_top] = ele;
+    last_push_type = OTHERS;
 }
 command_t top_of_cmd_stack(){
     if (cmd_stack_top >= 0)
@@ -175,16 +190,15 @@ command_t top_of_cmd_stack(){
     return NULL;
 }
 command_t pop_cmd_stack(){
-    cmd_stack_top -= 1;
-    return cmd_stack[cmd_stack_top + 1];
+    return cmd_stack_top >= 0 ? cmd_stack[cmd_stack_top--]:NULL;
 }
 void push_to_op_stack(enum operator_type ele){
     op_stack_top = op_stack_top + 1;
     op_stack[op_stack_top] = ele;
+    last_push_type = ele;
 }
 enum operator_type pop_op_stack(){
-    op_stack_top = op_stack_top - 1;
-    return op_stack[op_stack_top + 1];
+    return op_stack_top >= 0 ? op_stack[op_stack_top--] : 0;
 }
 enum operator_type top_of_op_stack(){
     if (op_stack_top < 0)
@@ -208,6 +222,29 @@ command_t parse_as_simple(command_t cmd0, char* new_word){
         
         return cmd;
     }
+}
+command_t parse_as_not(command_t cmd1){
+	command_t cmd = initiate_command(NOT_COMMAND);
+	cmd->u.command[0] = cmd1;
+	return cmd;
+}
+command_t parse_as_xor(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(XOR_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2; 
+	return cmd;
+}
+command_t parse_as_or(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(OR_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2; 
+	return cmd;
+}
+command_t parse_as_and(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(AND_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2; 
+	return cmd;
 }
 command_t parse_as_pipe(command_t cmd1, command_t cmd2){
 	command_t cmd = initiate_command(PIPE_COMMAND);
@@ -237,14 +274,31 @@ command_t parse_as_if(command_t cmd1, command_t cmd2, command_t cmd3){
 		cmd->u.command[2] = cmd3;
 	return cmd;
 }
-
+command_t parse_as_case(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(CASE_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	return cmd;
+}
+command_t parse_as_case_list(command_t cmd1, command_t cmd2){
+	command_t cmd = initiate_command(CASE_LIST_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	return cmd;
+}
 command_t parse_as_until(command_t cmd1, command_t cmd2){
 	command_t cmd = initiate_command(UNTIL_COMMAND);
 	cmd->u.command[0] = cmd1;
 	cmd->u.command[1] = cmd2;
 	return cmd;
 }
-
+command_t parse_as_for(command_t cmd1, command_t cmd2, command_t cmd3){
+	command_t cmd = initiate_command(FOR_COMMAND);
+	cmd->u.command[0] = cmd1;
+	cmd->u.command[1] = cmd2;
+	cmd->u.command[2] = cmd3;
+	return cmd;	
+}
 command_t parse_as_while(command_t cmd1, command_t cmd2){
 	command_t cmd = initiate_command(WHILE_COMMAND);
 	cmd->u.command[0] = cmd1;
@@ -258,19 +312,37 @@ command_t parse_as_io(command_t cmd, char* in_redirection, char* out_redirection
 		strcpy(tmp,in_redirection);
 		cmd->input = tmp;
 	}
-
 	if (out_redirection){
 		tmp = (char *)malloc(strlen(out_redirection)+1);
 		strcpy(tmp,out_redirection);
 		cmd->output = tmp;
 	}
-
 	return cmd;
 }
 void evaluateOnce(){
 	tmp2 = pop_cmd_stack();
 	tmp1 = pop_cmd_stack();
 	switch (pop_op_stack()){
+		case OR:
+			if (tmp1 == NULL)
+				error(1,0,"Something wrong with OR");
+			res = parse_as_or(tmp1,tmp2);
+			break;
+		case AND:
+			if (tmp1 == NULL)
+				error(1,0,"Something wrong with AND");
+			res = parse_as_and(tmp1,tmp2);
+			break;
+		case NOT:
+			if (tmp1 != NULL)
+				push_to_cmd_stack(tmp1);
+			res = parse_as_not(tmp2);
+			break;
+		case XOR:
+			if (tmp1 == NULL)
+				error(1,0,"Something wrong with XOR");
+			res = parse_as_xor(tmp1,tmp2);
+			break;
 		case PIPE:	
 			if (tmp1 == NULL)
 				error(1,0,"Something wrong with pipe");
@@ -288,8 +360,7 @@ void evaluateOnce(){
 			pop_op_stack(); // pop IF
 			res = parse_as_if(tmp1,tmp2,NULL);
 			break;
-        case ELSE:
-        	
+        case ELSE:        	
             pop_op_stack(); // pop THEN
             pop_op_stack(); // pop IF
             tmp0 = pop_cmd_stack();
@@ -301,14 +372,38 @@ void evaluateOnce(){
         	if (tmp1 == NULL)
 				error(1,0,"Something wrong with do");
             op = pop_op_stack(); // pop WHILE or UNTIL
-            if (op == WHILE)
-                res = parse_as_while(tmp1,tmp2);
-            else if (op == UNTIL)
-                res = parse_as_until(tmp1,tmp2);
+            switch(op){
+            	case WHILE:
+                	res = parse_as_while(tmp1,tmp2);
+                	break;
+            	case UNTIL:
+                	res = parse_as_until(tmp1,tmp2);
+                	break;
+                case IN:
+                	pop_op_stack(); // pop FOR
+                    tmp0 = pop_cmd_stack();
+            		if (tmp0 == NULL)
+						error(1,0,"Something wrong before IN");
+                	res = parse_as_for(tmp0,tmp1,tmp2);
+                	break;
+            } 
+
             break;
+        case RIGHT_PAREN:
+        	if (tmp1 == NULL)
+				error(1,0,"Something wrong before IN");
+			res = parse_as_case_list(tmp1,tmp2);
+			break;
+        case IN:
+        	pop_op_stack(); // pop case
+        	while (tmp1->type == CASE_LIST_COMMAND){
+        		tmp1->u.command[2] = tmp2;
+        		tmp2 = tmp1;
+        		tmp1 = pop_cmd_stack();
+        	}
+        	res = parse_as_case(tmp1,tmp2);
+        	break;
         case LEFT_PAREN:
-            //pop_op_stack(); // pop LEFT_PAREN
-	    //printf("just parsed subshell\n");
 	    	if (tmp2 == NULL)
 				error(1,0,"Something wrong with subshell");
 	    	if (tmp1 != NULL)
@@ -324,9 +419,23 @@ void evaluateOnce(){
 	if (top_of_op_stack() == NEWLINE)
         pop_op_stack();
 	push_to_cmd_stack(res);
-	last_push_type = OTHERS;
 }
-
+void evaluateBefore(){
+	if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
+	  	  pop_op_stack();
+	if (top_of_op_stack() == NEWLINE)
+    	  pop_op_stack();
+  	if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON || top_of_op_stack() == AND || top_of_op_stack() == OR)
+          evaluateOnce();
+}
+void end_of_case_list(){
+	pop_op_stack(); //;
+	printf("++++++++++++%d++++++++++",top_of_op_stack());
+	evaluateBefore();
+	if (top_of_op_stack() != RIGHT_PAREN)
+        error (1, 0, "Something wrong around right parenthesis.");
+	evaluateOnce();
+}
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -348,10 +457,8 @@ make_command_stream (int (*get_next_byte) (void *),
       	//printf("top of cmd stack: %d\n", cmd_stack_top);
       	  if (top_of_op_stack() == NEWLINE)
                 pop_op_stack();
-      	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
-				evaluateOnce();
-		  }
-		  
+      	  while (op_stack_top >= 0)
+				evaluateOnce();		  
 		  if (op_stack_top >= 0 || cmd_stack_top > 0){
 		  		error(1,0,"Something wrong before EOF.");
 		  }
@@ -376,33 +483,18 @@ make_command_stream (int (*get_next_byte) (void *),
           {
               command_t tmp = parse_as_simple(NULL, token);
               push_to_cmd_stack(tmp);
-              last_push_type = token_type;
           }
           else
           {
     		  switch(last_push_type){
     		  	case NEWLINE:
     		  	{
-    		//   		  int top = op_stack_top;
-						// while (top >= 0){
-						// 	  enum operator_type s = op_stack[top];
-						// 	  if (s == IF || s == THEN || s == ELSE || s == WHILE || s == UNTIL || s == DO || s == LEFT_PAREN)
-						// 	  		break;
-						// 	  top--;		
-						// }
-					 //  if (top >= 0)
-					 //  		pop_op_stack();
-					 //  else{
-			      		  //printf("Replace newline with semicolon\n");
-			      		   
-			      	  	  pop_op_stack();
-			      	  	  push_to_op_stack(SEMICOLON);
-			      	  	  last_push_type = SEMICOLON;
-			      	  //}
-		      	  	  //printf("top of op stack: %d\n", op_stack_top);
-								      	  //printf("top of cmd stack: %d\n", cmd_stack_top);
-					  command_t tmp = parse_as_simple(NULL, token);
-              		  push_to_cmd_stack(tmp);
+    		  		  command_t tmp = parse_as_simple(NULL, token);
+	              	  push_to_cmd_stack(tmp);
+	              	  pop_op_stack();
+    		  		  if (top_of_cmd_stack()->type != CASE_LIST_COMMAND){
+			      	  	  push_to_op_stack(SEMICOLON);						  
+	              	  }
           		}
 				      break;
       	  	    case OTHERS:
@@ -425,7 +517,6 @@ make_command_stream (int (*get_next_byte) (void *),
 					  }
                   		
               }
-              last_push_type = token_type;
           }
       }
       else
@@ -435,7 +526,6 @@ make_command_stream (int (*get_next_byte) (void *),
           	  	  error(1,0,"error around semicolon");
 	          if (cmd_stack_top >= 0 || token_type != NEWLINE){
 	              push_to_op_stack(token_type);
-	              last_push_type = token_type;
 	          }
           }
           else{
@@ -446,22 +536,18 @@ make_command_stream (int (*get_next_byte) (void *),
               	  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
 					 		evaluateOnce();
 					  }
-					  ////printf("top of op stack: %d\n", op_stack_top);
-					  ////printf("top of cmd stack: %d\n", cmd_stack_top);
-              	      // if (last_push_type != OTHERS)
-              	      // 		error(1, 0, "Something wrong with io_redirection!");
               	      push_to_op_stack(token_type);
-              	      last_push_type = token_type;
               	  	  break;
                   case LEFT_PAREN:
                   case IF:
                   case WHILE:
                   case UNTIL:
-                      push_to_op_stack(token_type);
-                      last_push_type = token_type;
-                      ////printf("asdfsadfsfs");
+                  case FOR:
+                  case NOT:
+                  case CASE:
+                      push_to_op_stack(token_type);            
                       break;
-                      
+              
                   case NEWLINE:     
                   	  ////printf("++++++++++++++++++++++\n");
                       switch (top_of_op_stack())
@@ -485,9 +571,8 @@ make_command_stream (int (*get_next_byte) (void *),
 							      	  ////printf("top of op stack: %d\n", op_stack_top);
 							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
 							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-							      	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+							      	  while (op_stack_top >= 0)
 											evaluateOnce();
-									  }
 									  if (op_stack_top > 0 || cmd_stack_top > 0){
 									  		error(1,0,"Something wrong before this command.");
 									  }
@@ -505,19 +590,30 @@ make_command_stream (int (*get_next_byte) (void *),
 				          case SEMICOLON:
 				          		if (last_push_type == SEMICOLON)
 				          			pop_op_stack();
+				          		break;
+				          case RIGHT_PAREN:
+				          		if (last_push_type == RIGHT_PAREN)
+				          			break;
 			              default:
 			              		////printf("---------------------\n");
 			                    ////printf("last_push_type %d\n",last_push_type);
 			              		if (last_push_type == OTHERS){
 			              			push_to_op_stack(token_type);
-			              			last_push_type = token_type;
 			              		}
 
 			          }
 			                
 		              break;
-                      
+
 				  case PIPE:
+				  		if (last_push_type == PIPE)
+				  		{
+				  			pop_op_stack();
+				  			if (top_of_op_stack() == OR || top_of_op_stack() == AND)
+				  				evaluateOnce();
+				  			push_to_op_stack(OR);
+				  			break;
+				  		}
 				  		if (last_push_type == PIPE)
 				  			error(1,0,"|| is illegal!");
 				  		if (last_push_type == NEWLINE)
@@ -526,10 +622,24 @@ make_command_stream (int (*get_next_byte) (void *),
 					 		evaluateOnce();
 						}
 						push_to_op_stack(token_type);
-						      last_push_type = token_type;
-				 		break;
-                      
+				 		break;   
+				  case AND:
+					 	if (top_of_op_stack() == AND){
+					 		evaluateOnce();
+						}
+						push_to_op_stack(token_type);
+				 		break;                      
+				  case XOR:
+					 	if (top_of_op_stack() == XOR){
+					 		evaluateOnce();
+						}
+						push_to_op_stack(token_type);
+				 		break;                      
 				  case SEMICOLON:
+				  		if (last_push_type == SEMICOLON){
+				  			end_of_case_list();
+				  			break;
+				  		}
 				  		if (cmd_stack_top <0 && op_stack_top <0)
 				  			error(1,0,"error around semicolon!");
 				  		if (last_push_type == NEWLINE)
@@ -543,105 +653,70 @@ make_command_stream (int (*get_next_byte) (void *),
 							}
 				 		}
 						push_to_op_stack(token_type);
-						last_push_type = token_type;
 				 		break;
                       
                   case RIGHT_PAREN:
-                      if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
-                  	  	  pop_op_stack();
-                      if (top_of_op_stack() == NEWLINE)
-                          pop_op_stack();
-                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
-                          evaluateOnce();
+                  	  evaluateBefore();
                       if (top_of_op_stack() != LEFT_PAREN)
-                          error (1, 0, "Something wrong before RIGHT PAREN.");
-                      evaluateOnce();
+                          push_to_op_stack(RIGHT_PAREN);
+                      else
+                      	  evaluateOnce();
                       break;
 
                   case THEN:
-                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
-                  	  	  pop_op_stack();
-                  	  if (top_of_op_stack() == NEWLINE)
-                  	  		pop_op_stack();
-                  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
-                            evaluateOnce();
+                  	  evaluateBefore();
                       if (top_of_op_stack() != IF)
                             error (1, 0, "Something wrong before THEN.");
                       push_to_op_stack(THEN);
-                      last_push_type = THEN;
                       break;
-                      
+
+                  case IN:
+                  	  evaluateBefore();
+                      if (top_of_op_stack() != FOR && top_of_op_stack() != CASE)
+                            error (1, 0, "Something wrong before IN.");
+                      push_to_op_stack(IN);
+                      break;
+				                        
                   case ELSE:
-                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
-                  	  	  pop_op_stack();
-                      if (top_of_op_stack() == NEWLINE)
-                          pop_op_stack();
-                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
-                          evaluateOnce();
+                  	  evaluateBefore();
                       if (top_of_op_stack() != THEN)
                           error (1, 0, "Something wrong before ELSE.");
                       push_to_op_stack(ELSE);
-                      last_push_type = DO;
                       break;
                       
                   case FI:
-                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
-                  	  	  pop_op_stack();
-                  	  if (top_of_op_stack() == NEWLINE)
-                  	  		pop_op_stack();
-                  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
-                            evaluateOnce();
+                  	  evaluateBefore();
                       if (top_of_op_stack() != THEN && top_of_op_stack() != ELSE)
                             error (1, 0, "Something wrong before FI.");
                       evaluateOnce();
                       break;
+
+                  case ESAC:
+                  	  evaluateBefore();
+                      if (top_of_op_stack() != IN)
+                            error (1, 0, "Something wrong before esac.");
+                      evaluateOnce();
+                      break;
                       
                   case DO:
-                   ////printf("1top of op stack: %d\n", op_stack_top);
-							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
-							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-                      if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
-                  	  	  pop_op_stack();
-                  	  	 ////printf("2top of op stack: %d\n", op_stack_top);
-							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
-							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-                      if (top_of_op_stack() == NEWLINE)
-                          pop_op_stack();
-                       ////printf("3top of op stack: %d\n", op_stack_top);
-							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
-							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
-                          evaluateOnce();
-                       ////printf("4top of op stack: %d\n", op_stack_top);
-							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
-							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-                      if (top_of_op_stack() != UNTIL && top_of_op_stack() != WHILE)
+	                  evaluateBefore();
+                      if (top_of_op_stack() != UNTIL && top_of_op_stack() != WHILE && top_of_op_stack() != IN)
                           error (1, 0, "Something wrong before DO.");
                       push_to_op_stack(DO);
-                      last_push_type = DO;
                       break;
                       
                   case DONE:
-                      if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
-                  	  	  pop_op_stack();
-                  	  if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
-                  	  	  pop_op_stack();
-                      if (top_of_op_stack() == NEWLINE)
-                          pop_op_stack();
-                      if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON)
-                          evaluateOnce();
-                      if (top_of_op_stack() != DO) {
-					  //////printf("Last operator: %d\n", top_of_op_stack());
+                      evaluateBefore();
+                      if (top_of_op_stack() != DO) 
 		                          error (1, 0, "Something wrong before DONE.");
-				      }
                       evaluateOnce();
                       break;
              }
           }
       }
-      ////printf("top of op stack: %d\n", op_stack_top);
-      ////printf("top of cmd stack: %d\n", cmd_stack_top);
-      ////printf("Last push type: %d\n", last_push_type);
+      printf("top of op stack: %d\n", op_stack_top);
+      printf("top of cmd stack: %d\n", cmd_stack_top);
+      printf("Last push type: %d\n", last_push_type);
   } 
 
   return head;
@@ -663,11 +738,3 @@ read_command_stream (command_stream_t s)
     return NULL;
     
 }
-
-/*
-*  To-do:
-      1. separate cmd;
-      2. determine cmd;
-      3. deal with each cmd type;
-      
-*/

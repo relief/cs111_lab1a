@@ -24,6 +24,13 @@ enum command_type
     SUBSHELL_COMMAND,    // ( A )
     UNTIL_COMMAND,	 // until A do B done
     WHILE_COMMAND,	 // while A do B done
+    FOR_COMMAND,     // for A in B do C done
+    OR_COMMAND,      // A || B
+    AND_COMMAND,     // A && B
+    NOT_COMMAND,     // 
+    XOR_COMMAND,   // A^B
+    CASE_COMMAND,    // case A in B esac
+    CASE_LIST_COMMAND,  // A) B  ;; C
   };
 
 // Data associated with a command.

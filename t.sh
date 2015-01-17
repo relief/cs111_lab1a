@@ -1,24 +1,24 @@
+case a in
+	ubuntu) 
+      b ;;
+	windows) 
+      c ;;
+    mac)
+	  echo mac;;
+esac
 
-if
-  if a;a;a; then b; else :; fi
-then
 
- if c
-  then if d | e; then f; fi
- fi
-fi
+1 || 2 || 3
 
-g<h
+1 && 2
 
-while
-  while
-    until :; do echo yoo hoo!; done
-    false
-  do (a|b)
-  done >f
+! 1
+
+1 ^ 2
+
+for i in 1 2 3 4 5
 do
-  :>g
+   echo 123123
 done
 
-# Another weird example: nobody would ever want to run this.
-a<b>c|d<e>f|g<h>i
+
