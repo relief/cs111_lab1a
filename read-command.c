@@ -592,8 +592,8 @@ make_command_stream (int (*get_next_byte) (void *),
 							      	  ////printf("top of op stack: %d\n", op_stack_top);
 							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
 							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-							      	  while (op_stack_top >= 0)
-											evaluateOnce();
+							      	  //while (op_stack_top >= 0)
+											  evaluateOnce();
 									  if (op_stack_top > 0 || cmd_stack_top > 0){
 									  		error(1,0,"Something wrong before this command.");
 									  }
