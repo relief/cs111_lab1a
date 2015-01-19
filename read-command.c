@@ -36,21 +36,23 @@ enum operator_type
     OR, FOR, IN, AND, CASE, ESAC, XOR, NOT, DOUBLE_SEMICOLON
 };
 
+/* A command_stream is a linked list of command_t objects */
 struct command_stream
 {
     command_t command;
     command_stream_t next;
 };
 
-enum operator_type op_stack[MAX_SIZEOF_STACK];
+enum operator_type op_stack[MAX_SIZEOF_STACK]; // stores operator tokens
 enum operator_type op;
-command_t cmd_stack[MAX_SIZEOF_STACK];
-int op_stack_top = -1;
-int cmd_stack_top = -1;
+command_t cmd_stack[MAX_SIZEOF_STACK]; // stores command tokens
+int op_stack_top = -1; // keeps track of the top op_stack by incrementing with each token added
+int cmd_stack_top = -1; // keeps track of the top cmd_stack by incrementing with each token added
 
 command_t tmp0, tmp1, tmp2, tmp3, res;
 enum operator_type last_push_type,token_type;
 
+/* Constructor for command_stream_t */
 command_stream_t initiate_command_stream(){
   command_stream_t cmd_stream = (command_stream_t) malloc(sizeof(struct command_stream));
   cmd_stream->command = NULL;
@@ -58,6 +60,7 @@ command_stream_t initiate_command_stream(){
   return cmd_stream;
 }
 
+/* Constructor for command_t */
 command_t initiate_command(enum command_type type){
   command_t cmd = (command_t) malloc(sizeof(struct command));
   cmd->type = type;
@@ -67,7 +70,7 @@ command_t initiate_command(enum command_type type){
   return cmd;
 }
 
-//next step: ignore tokens that are single spaces, interpret just one newline as a ';'
+/* Parses the input byte by byte as tokens, which may be operators or regular words */
 char *get_next_token(int (*get_next_byte) (void *),
                void *get_next_byte_argument)
 {
@@ -130,6 +133,7 @@ char *get_next_token(int (*get_next_byte) (void *),
     return token;
 }
 
+/* Returns the operator type of a given token. Non-operators have a type of OTHERS */
 enum operator_type get_token_type(char *token){
 	if (strncmp(token,"&&",2) == 0)
 		return AND;
@@ -179,33 +183,41 @@ enum operator_type get_token_type(char *token){
     return OTHERS;
 }
 
+/* Pushes commands to the top of the command stack*/
 void push_to_cmd_stack(command_t ele){
     cmd_stack_top = cmd_stack_top + 1;
     cmd_stack[cmd_stack_top] = ele;
     last_push_type = OTHERS;
 }
+/* Peeks at the top fo the command stack */
 command_t top_of_cmd_stack(){
     if (cmd_stack_top >= 0)
       return cmd_stack[cmd_stack_top];
     return NULL;
 }
+/* Pops the element at the top fo the command stack */
 command_t pop_cmd_stack(){
     return cmd_stack_top >= 0 ? cmd_stack[cmd_stack_top--]:NULL;
 }
+
+/* Pushes operators to the top of the operator stack*/
 void push_to_op_stack(enum operator_type ele){
     op_stack_top = op_stack_top + 1;
     op_stack[op_stack_top] = ele;
     last_push_type = ele;
 }
+/* Peeks at the top fo the operator stack */
 enum operator_type pop_op_stack(){
     return op_stack_top >= 0 ? op_stack[op_stack_top--] : 0;
 }
+/* Pops the element at the top fo the operator stack */
 enum operator_type top_of_op_stack(){
     if (op_stack_top < 0)
         return 0;
     return op_stack[op_stack_top];
 }
 
+/* This series of parse_as_*** commands combines individual commands with their operators to create a new command */
 command_t parse_as_simple(command_t cmd0, char* new_word){
     char *new_word_part = (char *)malloc(strlen(new_word)+1);
     strcpy(new_word_part,new_word);
@@ -319,6 +331,8 @@ command_t parse_as_io(command_t cmd, char* in_redirection, char* out_redirection
 	}
 	return cmd;
 }
+
+/* Takes the elements from the top of the operator and command stack and tries to construct a new  command by calling a parse_as_*** function. */
 void evaluateOnce(){
 	tmp2 = pop_cmd_stack();
 	tmp1 = pop_cmd_stack();
@@ -420,6 +434,8 @@ void evaluateOnce(){
         pop_op_stack();
 	push_to_cmd_stack(res);
 }
+
+/* Commands with certain operators that should be evaluated before evaluating a compound command. */
 void evaluateBefore(){
 	if (top_of_op_stack() == SEMICOLON && last_push_type == SEMICOLON)
 	  	  pop_op_stack();
@@ -428,6 +444,8 @@ void evaluateBefore(){
   	if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON || top_of_op_stack() == AND || top_of_op_stack() == OR)
           evaluateOnce();
 }
+
+/* When the end of a case list is reached, the last case list is evaluated. */
 void end_of_case_list(){
 	pop_op_stack(); //;
 	printf("++++++++++++%d++++++++++",top_of_op_stack());
@@ -436,6 +454,7 @@ void end_of_case_list(){
         error (1, 0, "Something wrong around right parenthesis.");
 	evaluateOnce();
 }
+
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
 		     void *get_next_byte_argument)
@@ -448,7 +467,6 @@ make_command_stream (int (*get_next_byte) (void *),
   command_stream_t head = initiate_command_stream();
   command_stream_t cmd_stream = head;
   
-
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
       if (*token == EOF){   
@@ -477,6 +495,8 @@ make_command_stream (int (*get_next_byte) (void *),
       //printf("token_type %d\n",token_type);
       ////printf("token_type: %d",token_type);
       //printf("last token type%d\n",last_push_type);
+      
+      //If the current token is not an operator
       if (token_type == OTHERS)
       {
           if (cmd_stack_top < 0)
@@ -489,6 +509,7 @@ make_command_stream (int (*get_next_byte) (void *),
     		  switch(last_push_type){
     		  	case NEWLINE:
     		  	{
+                      // interpret just one newline as a ';'
     		  		  command_t tmp = parse_as_simple(NULL, token);
 	              	  push_to_cmd_stack(tmp);
 	              	  pop_op_stack();
@@ -519,16 +540,16 @@ make_command_stream (int (*get_next_byte) (void *),
               }
           }
       }
-      else
+      else // The current token is an operator
       {
-          if (op_stack_top < 0){
+          if (op_stack_top < 0){ // The operator stack is empty
           	  if (cmd_stack_top <0 && token_type == SEMICOLON)
           	  	  error(1,0,"error around semicolon");
 	          if (cmd_stack_top >= 0 || token_type != NEWLINE){
 	              push_to_op_stack(token_type);
 	          }
           }
-          else{
+          else{ // The operator stack is not empty
               switch(token_type)
               {
               	  case STDIN:
@@ -553,7 +574,6 @@ make_command_stream (int (*get_next_byte) (void *),
                       switch (top_of_op_stack())
                       {
 	                      case NEWLINE:
-								// check if it is not finished
 	                      {
 								int top = op_stack_top;
 								while (top >= 0){
@@ -564,6 +584,7 @@ make_command_stream (int (*get_next_byte) (void *),
 								}
 								//////printf("top %d\n",top);
 								if (top < 0){
+                                      // Keep evaluating commands in the last line until the command stack is empty and a new command_stream is created
 									  ////printf("---------end of command ---------\n");
 							      	  ////printf("top of op stack: %d\n", op_stack_top);
 							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
@@ -584,6 +605,7 @@ make_command_stream (int (*get_next_byte) (void *),
 									  }
 								}
 								else
+                                    // the two newlines do not indicate the end of a command stream
 									pop_op_stack();		              	  				
 						  }
 				             	break;
@@ -647,7 +669,7 @@ make_command_stream (int (*get_next_byte) (void *),
 				 		if (top_of_op_stack() == PIPE){
 				 			evaluateOnce();
 						}
-				 		else{
+				 		else{ //sequence command
 				   			if (top_of_op_stack() == SEMICOLON && last_push_type == OTHERS){
 				   				evaluateOnce();
 							}
@@ -722,6 +744,7 @@ make_command_stream (int (*get_next_byte) (void *),
   return head;
 }
 
+/* Returns the next command in the command string */
 command_t
 read_command_stream (command_stream_t s)
 {

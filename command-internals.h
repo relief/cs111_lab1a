@@ -27,7 +27,7 @@ enum command_type
     FOR_COMMAND,     // for A in B do C done
     OR_COMMAND,      // A || B
     AND_COMMAND,     // A && B
-    NOT_COMMAND,     // 
+    NOT_COMMAND,     // ! A
     XOR_COMMAND,   // A^B
     CASE_COMMAND,    // case A in B esac
     CASE_LIST_COMMAND,  // A) B  ;; C
