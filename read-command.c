@@ -336,6 +336,10 @@ command_t parse_as_io(command_t cmd, char* in_redirection, char* out_redirection
 void evaluateOnce(){
 	tmp2 = pop_cmd_stack();
 	tmp1 = pop_cmd_stack();
+  printf("top of stack : %d\n",top_of_op_stack());
+  if (top_of_op_stack() == NEWLINE)
+        pop_op_stack();
+  else
 	switch (pop_op_stack()){
 		case OR:
 			if (tmp1 == NULL)
@@ -383,8 +387,8 @@ void evaluateOnce(){
             res = parse_as_if(tmp0,tmp1,tmp2);
             break;
         case DO:
-        	if (tmp1 == NULL)
-				error(1,0,"Something wrong with DO");
+          	if (tmp1 == NULL)
+  				      error(1,0,"Something wrong with DO");
             op = pop_op_stack(); // pop WHILE or UNTIL
             switch(op){
             	case WHILE:
@@ -430,9 +434,8 @@ void evaluateOnce(){
         default:
             error(1, 0, "Something went wrong in evaluateOnce");
 	}
-	if (top_of_op_stack() == NEWLINE)
-        pop_op_stack();
 	push_to_cmd_stack(res);
+  printf("end of evaluateOnce\n");
 }
 
 /* Commands with certain operators that should be evaluated before evaluating a compound command. */
@@ -473,10 +476,12 @@ make_command_stream (int (*get_next_byte) (void *),
       	//printf("---------end of file ---------\n");
       	      //printf("top of op stack: %d\n", op_stack_top);
       	//printf("top of cmd stack: %d\n", cmd_stack_top);
-      	  if (top_of_op_stack() == NEWLINE)
-                pop_op_stack();
-      	  while (op_stack_top >= 0)
-				evaluateOnce();		  
+      if (top_of_op_stack() == NEWLINE)
+            pop_op_stack();
+      while (op_stack_top >= 0)
+				    evaluateOnce();
+      printf("op_stack_top %d cmd_stack_top %d",op_stack_top,cmd_stack_top);
+      printf("\n%d\n",top_of_cmd_stack()->type);
 		  if (op_stack_top >= 0 || cmd_stack_top > 0){
 		  		error(1,0,"Something wrong before EOF.");
 		  }
@@ -510,15 +515,16 @@ make_command_stream (int (*get_next_byte) (void *),
     		  	case NEWLINE:
     		  	{
                       // interpret just one newline as a ';'
-    		  		  command_t tmp = parse_as_simple(NULL, token);
-	              	  push_to_cmd_stack(tmp);
-	              	  pop_op_stack();
+                printf("-----------Newline\n");
+	              pop_op_stack();
     		  		  if (top_of_cmd_stack()->type != CASE_LIST_COMMAND){
 			      	  	  push_to_op_stack(SEMICOLON);						  
 	              	  }
+                command_t tmp = parse_as_simple(NULL, token);
+                push_to_cmd_stack(tmp);
           		}
 				      break;
-      	  	    case OTHERS:
+      	    case OTHERS:
       	  	    	  if (top_of_cmd_stack()->type != SIMPLE_COMMAND)
       	  	    	  		error(1,0,"error around SIMPLE_COMMAND");
                 	  parse_as_simple(top_of_cmd_stack(), token);
@@ -592,8 +598,8 @@ make_command_stream (int (*get_next_byte) (void *),
 							      	  ////printf("top of op stack: %d\n", op_stack_top);
 							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
 							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-							      	  //while (op_stack_top >= 0)
-											  evaluateOnce();
+							      	  while (op_stack_top >= 0)
+											evaluateOnce();
 									  if (op_stack_top > 0 || cmd_stack_top > 0){
 									  		error(1,0,"Something wrong before this command.");
 									  }
