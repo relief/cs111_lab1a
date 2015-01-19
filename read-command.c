@@ -359,18 +359,18 @@ void evaluateOnce(){
 			break;
 		case PIPE:	
 			if (tmp1 == NULL)
-				error(1,0,"Something wrong with pipe");
+				error(1,0,"Something wrong with PIPE");
 			res = parse_as_pipe(tmp1,tmp2);
 			////printf("just parsed pipe\n");
 			break;
 		case SEMICOLON:
 			if (tmp1 == NULL)
-				error(1,0,"Something wrong with ;");
+				error(1,0,"Something wrong with SEQUENCE");
 			res = parse_as_sequence(tmp1,tmp2);
 			break;
 		case THEN:
 			if (tmp1 == NULL)
-				error(1,0,"Something wrong with then");
+				error(1,0,"Something wrong with THEN");
 			pop_op_stack(); // pop IF
 			res = parse_as_if(tmp1,tmp2,NULL);
 			break;
@@ -379,12 +379,12 @@ void evaluateOnce(){
             pop_op_stack(); // pop IF
             tmp0 = pop_cmd_stack();
             if (tmp0 == NULL)
-				error(1,0,"Something wrong with else");
+				error(1,0,"Something wrong with ELSE");
             res = parse_as_if(tmp0,tmp1,tmp2);
             break;
         case DO:
         	if (tmp1 == NULL)
-				error(1,0,"Something wrong with do");
+				error(1,0,"Something wrong with DO");
             op = pop_op_stack(); // pop WHILE or UNTIL
             switch(op){
             	case WHILE:
@@ -419,7 +419,7 @@ void evaluateOnce(){
         	break;
         case LEFT_PAREN:
 	    	if (tmp2 == NULL)
-				error(1,0,"Something wrong with subshell");
+				error(1,0,"Something wrong with SUBSHELL");
 	    	if (tmp1 != NULL)
 	    	{
 	    		push_to_cmd_stack(tmp1);
@@ -448,7 +448,7 @@ void evaluateBefore(){
 /* When the end of a case list is reached, the last case list is evaluated. */
 void end_of_case_list(){
 	pop_op_stack(); //;
-	printf("++++++++++++%d++++++++++",top_of_op_stack());
+	//printf("++++++++++++%d++++++++++",top_of_op_stack());
 	evaluateBefore();
 	if (top_of_op_stack() != RIGHT_PAREN)
         error (1, 0, "Something wrong around right parenthesis.");
@@ -544,7 +544,7 @@ make_command_stream (int (*get_next_byte) (void *),
       {
           if (op_stack_top < 0){ // The operator stack is empty
           	  if (cmd_stack_top <0 && token_type == SEMICOLON)
-          	  	  error(1,0,"error around semicolon");
+          	  	  error(1,0,"Error around semicolon.");
 	          if (cmd_stack_top >= 0 || token_type != NEWLINE){
 	              push_to_op_stack(token_type);
 	          }
@@ -637,9 +637,9 @@ make_command_stream (int (*get_next_byte) (void *),
 				  			break;
 				  		}
 				  		if (last_push_type == PIPE)
-				  			error(1,0,"|| is illegal!");
+				  			error(1,0,"|| is illegal.");
 				  		if (last_push_type == NEWLINE)
-				  			error(1,0,"newline is illegal here!");
+				  			error(1,0,"Newline is illegal here.");
 					 	if (top_of_op_stack() == PIPE){
 					 		evaluateOnce();
 						}
@@ -663,9 +663,9 @@ make_command_stream (int (*get_next_byte) (void *),
 				  			break;
 				  		}
 				  		if (cmd_stack_top <0 && op_stack_top <0)
-				  			error(1,0,"error around semicolon!");
+				  			error(1,0,"Error around semicolon.");
 				  		if (last_push_type == NEWLINE)
-				  			error(1,0,"newline is illegal here!");
+				  			error(1,0,"Newline is illegal here.");
 				 		if (top_of_op_stack() == PIPE){
 				 			evaluateOnce();
 						}
@@ -736,9 +736,9 @@ make_command_stream (int (*get_next_byte) (void *),
              }
           }
       }
-      printf("top of op stack: %d\n", op_stack_top);
-      printf("top of cmd stack: %d\n", cmd_stack_top);
-      printf("Last push type: %d\n", last_push_type);
+      //printf("top of op stack: %d\n", op_stack_top);
+      //printf("top of cmd stack: %d\n", cmd_stack_top);
+      //printf("Last push type: %d\n", last_push_type);
   } 
 
   return head;

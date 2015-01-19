@@ -1,8 +1,13 @@
 Xie Yu, SID: 204398665
 Guanya Yang, SID: 204378262
 
-CS 111 Lab 1a: Profiling Shell Parser
-—————————————————————————————————————
+CS 111: Lab 1a Design Problem
+——————————————————————————————
+Our design problem builds on top of Lab 1a to also handle the control structures &&, ||, case, for, and !. We also added the XOR (^) command that is not present in Bash.
+
+
+Implementation of Lab 1a:
+—————————————————————————
 In this lab, we implemented a shell that parses shell scripts into commands that can eventually be executed. The shell takes a text file as input and outputs another text file with the commands parsed in executable form. Our shell supports simple commands, pipes, sequence commands, subshell commands, and compound commands (if, until, and while). Upon any invalid input that is not supported, the shell prints out the corresponding error to stderr.
 
 Our design of the parser consists of two stacks, one for keeping track of commands and one for keeping track of command operators (i.e. pipe, parentheses, semi-colons, key words like ‘IF’). We first parse the input file as tokens consisting of words, newlines, or command operators in get_next_token(). Then, in make_command_stream(), we populate the two stacks with the tokens to ultimately generate command objects as defined in command-internals.h. We designed these command objects to form the nodes of the command_stream linked_list object, which can be read using read_command_stream(). All of our code contributions can be located in read-command.c.
