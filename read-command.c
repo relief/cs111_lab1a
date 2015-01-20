@@ -426,12 +426,12 @@ void evaluateOnce(){
         	res = parse_as_case(tmp1,tmp2);
         	break;
         case LEFT_PAREN:
-	    	if (tmp2 == NULL)
-				error(1,0,"Something wrong with SUBSHELL");
-	    	if (tmp1 != NULL)
-	    	{
-	    		push_to_cmd_stack(tmp1);
-	    	}
+    	    	if (tmp2 == NULL)
+    				error(1,0,"Something wrong with SUBSHELL");
+    	    	if (tmp1 != NULL)
+    	    	{
+    	    		push_to_cmd_stack(tmp1);
+    	    	}
 	    		
             res = parse_as_subshell(tmp2);
             break;
@@ -473,6 +473,7 @@ make_command_stream (int (*get_next_byte) (void *),
   char *token;
   command_stream_t head = initiate_command_stream();
   command_stream_t cmd_stream = head;
+  int tmp;
   
   while (token = get_next_token(get_next_byte, get_next_byte_argument))
   {
@@ -485,6 +486,20 @@ make_command_stream (int (*get_next_byte) (void *),
         if (top_of_op_stack() == NEWLINE)
               pop_op_stack();
         //printf("sdfsd\n");
+        for (tmp = op_stack_top; tmp >= 0;tmp--){
+            enum operator_type op = op_stack[tmp];
+            switch(op){
+              case IF:
+              case THEN:
+              case WHILE:
+              case ELSE:
+              case LEFT_PAREN:
+              case DO:
+              case UNTIL:
+                error(1,0,"Something wrong before EOF\n");
+            }
+        }
+
         while (op_stack_top >= 0)
   				    evaluateOnce();
         //printf("op_stack_top %d cmd_stack_top %d",op_stack_top,cmd_stack_top);
