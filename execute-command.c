@@ -76,8 +76,8 @@ execute_command (command_t c, int profiling)
     		execute_command(c->u.command[0],profiling);
     		break;
     	case IF_COMMAND:
-
-
+    		execute_command(c->u.command[0],profiling);
+    		printf("status: %d\n",c->status);
 	
 	}
     

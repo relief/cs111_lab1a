@@ -1,1 +1,7 @@
-echo 1213123; cat main.c
+echo < input.txt
+
+if false then
+echo 1213123; 
+else
+cat main.c
+fi
