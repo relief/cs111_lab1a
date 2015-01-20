@@ -51,7 +51,7 @@ int exec_simple_command(command_t c){
                 error (1, 0, "Execvp for SIMPLE failed");
                 return -1;
             }
-        }
+    }
     else {
         while (wait(&(c->status)) != pid)
             ;
@@ -68,6 +68,14 @@ execute_command (command_t c, int profiling)
     		if (exec_simple_command(c) < 0)
     			exit(1);
     		break;
+    	case SEQUENCE_COMMAND:
+    		execute_command(c->u.command[0],profiling);
+    		execute_command(c->u.command[1],profiling);
+    		break;
+    	case SUBSHELL_COMMAND:
+    		execute_command(c->u.command[0],profiling);
+    		break;
+    	case IF_COMMAND:
 
 
 	

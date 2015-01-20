@@ -1,1 +1,1 @@
-echo 1213123
+echo 1213123; cat main.c
