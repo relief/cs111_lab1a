@@ -40,28 +40,38 @@ command_status (command_t c)
   return c->status;
 }
 
+int exec_simple_command(command_t c){
+	pid_t pid;
+    if ((pid = fork()) < 0) {
+        error (1, 0, "Forking a child process failed");
+        return -1;
+    }
+    else if (pid == 0) {
+            if (execvp(*c->u.word,c->u.word) < 0) {
+                error (1, 0, "Execvp for SIMPLE failed");
+                return -1;
+            }
+        }
+    else {
+        while (wait(&(c->status)) != pid)
+            ;
+    }
+    return 0;
+}
 void
 execute_command (command_t c, int profiling)
 {
   /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
-    pid_t pid;
     
-    if ((pid = fork()) < 0) {
-        error (1, 0, "Forking a child process failed");
-        exit(1);
-    }
-    else if (pid == 0) {
-        if (c->type == SIMPLE_COMMAND) {
-            if (execvp(c->word) < 0) {
-                error (1, 0, "Execvp failed");
-                exit(1);
-            }
-        }
-    }
-    else {
-        while (wait(c->status) != pid)
-            ;
-    }
+    switch (c->type){
+    	case SIMPLE_COMMAND:
+    		if (exec_simple_command(c) < 0)
+    			exit(1);
+    		break;
+
+
+	
+	}
     
     
   //error (1, 0, "command execution not yet implemented");
