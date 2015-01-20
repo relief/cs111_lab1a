@@ -1,7 +1,3 @@
-echo < input.txt
+grep the < input.txt
 
-if false then
-echo 1213123; 
-else
-cat main.c
-fi
+echo 123 > output.txt

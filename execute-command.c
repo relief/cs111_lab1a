@@ -18,6 +18,7 @@
 #include "command.h"
 #include "command-internals.h"
 #include "sys/types.h"
+#include "fcntl.h"
 
 #include <error.h>
 
@@ -47,6 +48,16 @@ int exec_simple_command(command_t c){
         return -1;
     }
     else if (pid == 0) {
+	    if (c->input) {
+		int in = open(c->input, O_RDONLY);
+		dup2(in, 0);
+		close(in);
+	    }
+	    if (c->output) {
+	    	int out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
+	    	dup2(out, 1);
+		close(out);
+	    }
             if (execvp(*c->u.word,c->u.word) < 0) {
                 error (1, 0, "Execvp for SIMPLE failed");
                 return -1;
