@@ -71,13 +71,26 @@ execute_command (command_t c, int profiling)
     	case SEQUENCE_COMMAND:
     		execute_command(c->u.command[0],profiling);
     		execute_command(c->u.command[1],profiling);
+    		c->status = c->u.command[1]->status;
     		break;
     	case SUBSHELL_COMMAND:
     		execute_command(c->u.command[0],profiling);
     		break;
     	case IF_COMMAND:
+    		// IF a THEN b ELSE c FI
     		execute_command(c->u.command[0],profiling);
-    		printf("status: %d\n",c->status);
+    		if (c->u.command[0]->status == 0)		// a is true
+    		{
+    			execute_command(c->u.command[1],profiling);
+    			c->type = c->u.command[1]->status;
+    		}
+    		else if (c->u.command[2])				// if a is false and there is else clause
+    		{
+    			execute_command(c->u.command[2],profiling);
+    			c->status = c->u.command[2]->status;
+    		}
+    		break;
+
 	
 	}
     
