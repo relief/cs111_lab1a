@@ -23,45 +23,45 @@
 #include <error.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
+ static function definitions, etc.  */
 
 int
 prepare_profiling (char const *name)
 {
-  /* FIXME: Replace this with your implementation.  You may need to
+    /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  error (0, 0, "warning: profiling not yet implemented");
-  return -1;
+    error (0, 0, "warning: profiling not yet implemented");
+    return -1;
 }
 
 int
 command_status (command_t c)
 {
-  return c->status;
+    return c->status;
 }
 
 int exec_simple_command(command_t c){
-	pid_t pid;
+    pid_t pid;
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
     else if (pid == 0) {
-	    if (c->input) {
-		int in = open(c->input, O_RDONLY);
-		dup2(in, 0);
-		close(in);
-	    }
-	    if (c->output) {
-	    	int out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
-	    	dup2(out, 1);
-		close(out);
-	    }
-            if (execvp(*c->u.word,c->u.word) < 0) {
-                error (1, 0, "Execvp for SIMPLE failed");
-                return -1;
-            }
+        if (c->input) {
+            int in = open(c->input, O_RDONLY);
+            dup2(in, 0);
+            close(in);
+        }
+        if (c->output) {
+            int out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
+            dup2(out, 1);
+            close(out);
+        }
+        if (execvp(*c->u.word,c->u.word) < 0) {
+            error (1, 0, "Execvp for SIMPLE failed");
+            return -1;
+        }
     }
     else {
         while (wait(&(c->status)) != pid)
@@ -81,16 +81,16 @@ int exec_pipe_command(command_t c, int profiling){
     else if (pid == 0) {
         // execute the pipe command in the child
         pipe(fd);
-        p = fork();
+        pid_t p = fork();
         if (p == 0) {
             close(fd[0]);
             dup2(1, fd[1]); // write to pipe
-            execute_command(c, profiling);
+            execute_command(c->u.command[0],profiling);
         }
         else {
             close(fd[1]);
-            dup2(1, fd[1]); // read from pipe
-            execute_command(c, profiling);
+            dup2(0, fd[0]); // read from pipe
+            execute_command(c->u.command[1],profiling);
         }
     }
     else {
@@ -98,14 +98,14 @@ int exec_pipe_command(command_t c, int profiling){
             ;
     }
     
-    execute_command(c->u.command[1],profiling);
+    //execute_command(c->u.command[1],profiling);
     return 0;
 }
 
 void
 execute_command (command_t c, int profiling)
 {
-  /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
+    /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
     
     // Handle standard input/output redirection
     if (c->input) {
@@ -120,32 +120,32 @@ execute_command (command_t c, int profiling)
     }
     
     switch (c->type){
-    	case SIMPLE_COMMAND:
-    		if (exec_simple_command(c) < 0)
-    			exit(1);
-    		break;
-    	case SEQUENCE_COMMAND:
-    		execute_command(c->u.command[0],profiling);
-    		execute_command(c->u.command[1],profiling);
-    		c->status = c->u.command[1]->status;
-    		break;
-    	case SUBSHELL_COMMAND:
-    		execute_command(c->u.command[0],profiling);
-    		break;
-    	case IF_COMMAND:
-    		// IF a THEN b ELSE c FI
-    		execute_command(c->u.command[0],profiling);
-    		if (c->u.command[0]->status == 0)		// a is true
-    		{
-    			execute_command(c->u.command[1],profiling);
-    			c->status = c->u.command[1]->status;
-    		}
-    		else if (c->u.command[2])				// if a is false and there is else clause
-    		{
-    			execute_command(c->u.command[2],profiling);
-    			c->status = c->u.command[2]->status;
-    		}
-    		break;
+        case SIMPLE_COMMAND:
+            if (exec_simple_command(c) < 0)
+                exit(1);
+            break;
+        case SEQUENCE_COMMAND:
+            execute_command(c->u.command[0],profiling);
+            execute_command(c->u.command[1],profiling);
+            c->status = c->u.command[1]->status;
+            break;
+        case SUBSHELL_COMMAND:
+            execute_command(c->u.command[0],profiling);
+            break;
+        case IF_COMMAND:
+            // IF a THEN b ELSE c FI
+            execute_command(c->u.command[0],profiling);
+            if (c->u.command[0]->status == 0)		// a is true
+            {
+                execute_command(c->u.command[1],profiling);
+                c->status = c->u.command[1]->status;
+            }
+            else if (c->u.command[2])				// if a is false and there is else clause
+            {
+                execute_command(c->u.command[2],profiling);
+                c->status = c->u.command[2]->status;
+            }
+            break;
         case WHILE_COMMAND:
             // WHILE a DO b DONE
             execute_command(c->u.command[0],profiling);
@@ -168,8 +168,8 @@ execute_command (command_t c, int profiling)
             if (exec_pipe_command(c, profiling) < 0)
                 exit(1);
             break;
-	}
+    }
     
     
-  //error (1, 0, "command execution not yet implemented");
+    //error (1, 0, "command execution not yet implemented");
 }
