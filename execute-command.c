@@ -85,9 +85,9 @@ int exec_pipe_command(command_t c, int profiling){
             ;
     }
     // Redirect input from pipe
-    int in = open(output, O_RDONLY);
-    dup2(in, 0);
-    close(in);
+    //int in = open(output, O_RDONLY);
+    //dup2(in, 0);
+    //close(in);
     
     execute_command(c->u.command[1],profiling);
     return 0;
@@ -104,8 +104,8 @@ execute_command (command_t c, int profiling)
         dup2(in, 0);
         close(in);
     }
-    if (c->input) {
-        int in = open(c->output, O_WONLY | O_APPEND | O_CREAT);
+    if (c->output) {
+        int out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
         dup2(out, 1);
         close(out);
     }
@@ -155,7 +155,7 @@ execute_command (command_t c, int profiling)
                 c->status = c->u.command[1]->status;
             }
             break;
-        case PIPE:
+        case PIPE_COMMAND:
             if (exec_pipe_command(c, profiling) < 0)
                 exit(1);
             break;
