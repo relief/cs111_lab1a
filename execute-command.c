@@ -18,6 +18,7 @@
 #include "command.h"
 #include "command-internals.h"
 #include "sys/types.h"
+#include "fcntl.h"
 
 #include <error.h>
 
@@ -58,10 +59,46 @@ int exec_simple_command(command_t c){
     }
     return 0;
 }
+
+int exec_pipe_command(command_t c, int profiling){
+    pid_t pid;
+    if ((pid = fork()) < 0) {
+        error (1, 0, "Forking a child process failed");
+        return -1;
+    }
+    else if (pid == 0) {
+        execute_command(c->u.command[0], profiling);
+        //somehow get output
+    }
+    else {
+        while (wait(&(c->status)) != pid)
+            ;
+    }
+    // Redirect input from pipe
+    int in = open(output, O_RDONLY);
+    dup2(in, 0);
+    close(in);
+    
+    execute_command(c->u.command[1],profiling);
+    return 0;
+}
+
 void
 execute_command (command_t c, int profiling)
 {
   /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
+    
+    // Handle standard input/output redirection
+    if (c->input) {
+        int in = open(c->input, O_RDONLY);
+        dup2(in, 0);
+        close(in);
+    }
+    if (c->input) {
+        int in = open(c->output, O_WONLY | O_APPEND | O_CREAT);
+        dup2(out, 1);
+        close(out);
+    }
     
     switch (c->type){
     	case SIMPLE_COMMAND:
@@ -82,7 +119,7 @@ execute_command (command_t c, int profiling)
     		if (c->u.command[0]->status == 0)		// a is true
     		{
     			execute_command(c->u.command[1],profiling);
-    			c->type = c->u.command[1]->status;
+    			c->status = c->u.command[1]->status;
     		}
     		else if (c->u.command[2])				// if a is false and there is else clause
     		{
@@ -90,8 +127,28 @@ execute_command (command_t c, int profiling)
     			c->status = c->u.command[2]->status;
     		}
     		break;
-
-	
+        case WHILE_COMMAND:
+            // WHILE a DO b DONE
+            execute_command(c->u.command[0],profiling);
+            while (c->u.command[0]->status == 0)		// a is true
+            {
+                execute_command(c->u.command[1],profiling);
+                c->status = c->u.command[1]->status;
+            }
+            break;
+        case UNTIL_COMMAND:
+            // UNTIL a DO b DONE
+            execute_command(c->u.command[0],profiling);
+            while (! (c->u.command[0]->status == 0)	)	// a is false
+            {
+                execute_command(c->u.command[1],profiling);
+                c->status = c->u.command[1]->status;
+            }
+            break;
+        case PIPE:
+            if (exec_pipe_command(c, profiling) < 0)
+                exit(1);
+            break;
 	}
     
     
