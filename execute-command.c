@@ -56,12 +56,12 @@ int exec_simple_command(command_t c){
 	    if (c->output) {
 	    	int out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
 	    	dup2(out, 1);
-		close(out);
+			close(out);
 	    }
-            if (execvp(*c->u.word,c->u.word) < 0) {
+        if (execvp(*c->u.word,c->u.word) < 0) {
                 error (1, 0, "Execvp for SIMPLE failed");
                 return -1;
-            }
+        }
     }
     else {
         while (wait(&(c->status)) != pid)
@@ -71,25 +71,44 @@ int exec_simple_command(command_t c){
 }
 
 int exec_pipe_command(command_t c, int profiling){
-    pid_t pid;
+    pid_t pid,childpid;
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
     else if (pid == 0) {
-        execute_command(c->u.command[0], profiling);
-        //somehow get output
+        if((childpid = fork()) == -1)
+        {
+                error (1, 0, "Forking a child process failed");
+                return -1;
+        }
+        if(childpid == 0)
+        {
+                /* Child process closes up input side of pipe */
+                close(fd[0]);
+
+                /* Send "string" through the output side of pipe */
+                write(fd[1], "pipe_test", 10);
+                exit(0);
+        }
+        else
+        {
+                /* Parent process closes up output side of pipe */
+                close(fd[1]);
+                /* Read in a string from the pipe */
+                nbytes = read(fd[0], readbuffer, sizeof(readbuffer));
+                printf("Received string: %s", readbuffer);
+        }
     }
     else {
         while (wait(&(c->status)) != pid)
             ;
+        c->status = c->u.command[1]->status;
     }
     // Redirect input from pipe
-    int in = open(output, O_RDONLY);
-    dup2(in, 0);
-    close(in);
+   
     
-    execute_command(c->u.command[1],profiling);
+   // execute_command(c->u.command[1],profiling);
     return 0;
 }
 
@@ -155,7 +174,7 @@ execute_command (command_t c, int profiling)
                 c->status = c->u.command[1]->status;
             }
             break;
-        case PIPE:
+        case PIPE_COMMAND:
             if (exec_pipe_command(c, profiling) < 0)
                 exit(1);
             break;
