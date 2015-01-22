@@ -71,23 +71,32 @@ int exec_simple_command(command_t c){
 }
 
 int exec_pipe_command(command_t c, int profiling){
+    int fd[2];
     pid_t pid;
+    
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
     else if (pid == 0) {
-        execute_command(c->u.command[0], profiling);
-        //somehow get output
+        // execute the pipe command in the child
+        pipe(fd);
+        p = fork();
+        if (p == 0) {
+            close(fd[0]);
+            dup2(1, fd[1]); // write to pipe
+            execute_command(c, profiling);
+        }
+        else {
+            close(fd[1]);
+            dup2(1, fd[1]); // read from pipe
+            execute_command(c, profiling);
+        }
     }
     else {
         while (wait(&(c->status)) != pid)
             ;
     }
-    // Redirect input from pipe
-    //int in = open(output, O_RDONLY);
-    //dup2(in, 0);
-    //close(in);
     
     execute_command(c->u.command[1],profiling);
     return 0;
