@@ -23,26 +23,26 @@
 #include <error.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
-   static function definitions, etc.  */
+ static function definitions, etc.  */
 
 int
 prepare_profiling (char const *name)
 {
-  /* FIXME: Replace this with your implementation.  You may need to
+    /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-  error (0, 0, "warning: profiling not yet implemented");
-  return -1;
+    error (0, 0, "warning: profiling not yet implemented");
+    return -1;
 }
 
 int
 command_status (command_t c)
 {
-  return c->status;
+    return c->status;
 }
 
 int exec_simple_command(command_t c){
-	pid_t pid;
+    pid_t pid;
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
@@ -68,11 +68,11 @@ int exec_pipe_command(command_t c, int profiling){
     int fd[2];
     int stdin_copy = dup(0);
 
-    //printf("get into pipe");
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
+
     pipe(fd);
     if (pid == 0) {
         		//close(1);
@@ -123,6 +123,7 @@ int exec_pipe_command(command_t c, int profiling){
 void
 execute_command (command_t c, int profiling)
 {
+
   /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
     pid_t pid;
     int status = 0;
