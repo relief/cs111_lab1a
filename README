@@ -1,10 +1,13 @@
-Xie Yu, SID: 
+Xie Yu, SID: 204398665
 Guanya Yang, SID: 204378262
 
-CS 111 Lab 1a: Profiling Shell Parser
-—————————————————————————————————————
-In this lab, we implemented a shell that parses shell scripts into commands that can eventually be executed. The shell takes a text file as input and outputs another text file with the commands parsed in executable form. Our shell supports simple commands, pipes, sequence commands, subshell commands, and compound commands (if, until, and while). Upon any invalid input that is not supported, the shell prints out the corresponding error to stderr.
+CS 111 Lab 1b: Profiling Shell Execution
+————————————————————————————————————————— 
+We implemented the execution of the shell input created from part 1a. The input are executed as commands by the execute_command() function detailed in the file execute-command.c. We handle any stdin or stdout redirection, as well as the command type while executing the commands.
 
-Our design of the parser consists of two stacks, one for keeping track of commands and one for keeping track of command operators (i.e. pipe, parentheses, semi-colons, key words like ‘IF’). We first parse the input file as tokens consisting of words, newlines, or command operators in get_next_token(). Then, in make_command_stream(), we populate the two stacks with the tokens to ultimately generate command objects as defined in command-internals.h. We designed these command objects to form the nodes of the command_stream linked_list object, which can be read using read_command_stream(). All of our code contributions can be located in read-command.c.
+We handled the stdin and stdout redirection by closing the stdin/stdout file descriptor and opening the input or output redirection of the command.
 
+For each command type, we evaluate all commands except for the SIMPLE_COMMAND recursively, so that each subcommand calls the execute_command() function again. We handle SIMPLE_COMMANDs separately in the exec_simple_command() function, which forks a child process for each simple command. There is also a separate function exec_pipe_command() for the PIPE_COMMAND by using the system calls pipe() and dup2() in order to achieve interprocess communication (IPC). We created copies of stdin(0) and stdout(1) so as not to modify them while implementing pipes or redirections.
+
+Finally, we created two test cases: test_1b_good.sh and test_1b_bad.sh.
 
