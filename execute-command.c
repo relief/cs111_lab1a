@@ -145,7 +145,7 @@ execute_command (command_t c, int profiling)
     } 
 	if (c->output){
 		close(1);
-		out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
+		out = open(c->output, O_WRONLY | O_APPEND | O_CREAT, 0666);
 	}
 		
    

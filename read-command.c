@@ -635,9 +635,9 @@ make_command_stream (int (*get_next_byte) (void *),
              }
           }
       }
-      printf("top of op stack: %d\n", op_stack_top);
-      printf("top of cmd stack: %d\n", cmd_stack_top);
-      printf("Last push type: %d\n", last_push_type);
+      //printf("top of op stack: %d\n", op_stack_top);
+      //printf("top of cmd stack: %d\n", cmd_stack_top);
+      //printf("Last push type: %d\n", last_push_type);
   } 
 
   return head;
