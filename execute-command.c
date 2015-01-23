@@ -48,67 +48,75 @@ int exec_simple_command(command_t c){
         return -1;
     }
     else if (pid == 0) {
-	    if (c->input) {
-		int in = open(c->input, O_RDONLY);
-		dup2(in, 0);
-		close(in);
-	    }
-	    if (c->output) {
-	    	int out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
-	    	dup2(out, 1);
-			close(out);
-	    }
         if (execvp(*c->u.word,c->u.word) < 0) {
                 error (1, 0, "Execvp for SIMPLE failed");
                 return -1;
         }
+        exit(0);
     }
     else {
         while (wait(&(c->status)) != pid)
             ;
+ //       printf("in simple, c status code %d\n",c->status);
     }
+  //  printf("I am at the end of simple command with c status %d\n",c->status);
     return 0;
 }
 
 int exec_pipe_command(command_t c, int profiling){
     pid_t pid,childpid;
+    int fd[2];
+    int stdin_copy = dup(0);
+
+    //printf("get into pipe");
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
-    else if (pid == 0) {
-        if((childpid = fork()) == -1)
-        {
-                error (1, 0, "Forking a child process failed");
-                return -1;
-        }
-        if(childpid == 0)
-        {
-                /* Child process closes up input side of pipe */
+    pipe(fd);
+    if (pid == 0) {
+        		//close(1);
+    		//	printf("a start---------------\n");
+        		dup2(fd[1],1);
                 close(fd[0]);
-
-                /* Send "string" through the output side of pipe */
-                write(fd[1], "pipe_test", 10);
-                exit(0);
-        }
-        else
-        {
-                /* Parent process closes up output side of pipe */
                 close(fd[1]);
-                /* Read in a string from the pipe */
-                nbytes = read(fd[0], readbuffer, sizeof(readbuffer));
-                printf("Received string: %s", readbuffer);
-        }
+                
+                /* Send "string" through the output side of pipe */
+                //printf("a start\n");
+             	execute_command(c->u.command[0],profiling);
+             	//printf("a end\n");
+           
+             	//printf("a end -------------\n");
+                exit(1);
     }
-    else {
-        while (wait(&(c->status)) != pid)
-            ;
-        c->status = c->u.command[1]->status;
+    else{
+        /* Parent process closes up output side of pipe */
+        		//close(0);
+    			close(0);
+                dup2(fd[0],0);
+                close(fd[0]);
+                close(fd[1]);
+
+              //printf("b start\n");
+                //printf("b's type%d\n",c->u.command[1]->type);
+                execute_command(c->u.command[1],profiling);
+                //printf("b end\n");
+                c->status = c->u.command[1]->status;                
+                //printf("b end c1 status%d\n", c->u.command[1]->status);
     }
-    // Redirect input from pipe
-   
-    
-   // execute_command(c->u.command[1],profiling);
+
+	//printf("parents wait begin\n");
+	//close(fd[0]);
+	//close(fd[1]);
+    //wait(pid);
+	dup2(stdin_copy,0);
+	close(stdin_copy);
+    //printf("c0 status:%d\n",c->u.command[0]->status);
+    //printf("c1 status:%d\n",c->u.command[1]->status);
+    //printf("c  status:%d\n",c->status);
+        //c->status = c->u.command[1]->status;
+    // Redirect input from pipe    
+    // execute_command(c->u.command[1],profiling);
     return 0;
 }
 
@@ -116,70 +124,85 @@ void
 execute_command (command_t c, int profiling)
 {
   /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
-    
+    pid_t pid;
+    int status = 0;
     // Handle standard input/output redirection
-    if (c->input) {
-        int in = open(c->input, O_RDONLY);
-        dup2(in, 0);
-        close(in);
-    }
-    if (c->input) {
-        int in = open(c->output, O_WONLY | O_APPEND | O_CREAT);
-        dup2(out, 1);
-        close(out);
-    }
-    
-    switch (c->type){
-    	case SIMPLE_COMMAND:
-    		if (exec_simple_command(c) < 0)
-    			exit(1);
-    		break;
-    	case SEQUENCE_COMMAND:
-    		execute_command(c->u.command[0],profiling);
-    		execute_command(c->u.command[1],profiling);
-    		c->status = c->u.command[1]->status;
-    		break;
-    	case SUBSHELL_COMMAND:
-    		execute_command(c->u.command[0],profiling);
-    		break;
-    	case IF_COMMAND:
-    		// IF a THEN b ELSE c FI
-    		execute_command(c->u.command[0],profiling);
-    		if (c->u.command[0]->status == 0)		// a is true
-    		{
-    			execute_command(c->u.command[1],profiling);
-    			c->status = c->u.command[1]->status;
-    		}
-    		else if (c->u.command[2])				// if a is false and there is else clause
-    		{
-    			execute_command(c->u.command[2],profiling);
-    			c->status = c->u.command[2]->status;
-    		}
-    		break;
-        case WHILE_COMMAND:
-            // WHILE a DO b DONE
-            execute_command(c->u.command[0],profiling);
-            while (c->u.command[0]->status == 0)		// a is true
-            {
-                execute_command(c->u.command[1],profiling);
-                c->status = c->u.command[1]->status;
-            }
-            break;
-        case UNTIL_COMMAND:
-            // UNTIL a DO b DONE
-            execute_command(c->u.command[0],profiling);
-            while (! (c->u.command[0]->status == 0)	)	// a is false
-            {
-                execute_command(c->u.command[1],profiling);
-                c->status = c->u.command[1]->status;
-            }
-            break;
-        case PIPE_COMMAND:
-            if (exec_pipe_command(c, profiling) < 0)
-                exit(1);
-            break;
+
+    int stdin_copy  = dup(0);
+    int stdout_copy = dup(1);
+    int in = -1;
+    int out = -1;
+    if (c->input){
+        close(0);
+        in = open(c->input, O_RDONLY);
+    } 
+	if (c->output){
+		close(1);
+		out = open(c->output, O_WRONLY | O_APPEND | O_CREAT);
 	}
-    
-    
-  //error (1, 0, "command execution not yet implemented");
+		
+   
+    switch (c->type){
+	    	case SIMPLE_COMMAND:
+	    		if (exec_simple_command(c) < 0)
+	    			exit(1);
+//	    		printf("simple command return %d\n",c->status);
+	    		break;
+	    	case SEQUENCE_COMMAND:
+	    		execute_command(c->u.command[0],profiling);
+	    		execute_command(c->u.command[1],profiling);
+	    		c->status = c->u.command[1]->status;
+	    		break;
+	    	case SUBSHELL_COMMAND:
+	    		execute_command(c->u.command[0],profiling);
+	    		c->status = c->u.command[0]->status;
+	    		break;
+	    	case IF_COMMAND:
+	    		// IF a THEN b ELSE c FI
+	    		execute_command(c->u.command[0],profiling);
+	    		if (c->u.command[0]->status == 0)		// a is true
+	    		{
+	    			execute_command(c->u.command[1],profiling);
+	    			c->status = c->u.command[1]->status;
+	    		}
+	    		else if (c->u.command[2])				// if a is false and there is else clause
+	    		{
+	    			execute_command(c->u.command[2],profiling);
+	    			c->status = c->u.command[2]->status;
+	    		}
+	    		break;
+	        case WHILE_COMMAND:
+	            // WHILE a DO b DONE
+	            execute_command(c->u.command[0],profiling);
+	            while (c->u.command[0]->status == 0)		// a is true
+	            {
+	                execute_command(c->u.command[1],profiling);
+	                c->status = c->u.command[1]->status;
+	            }
+	            break;
+	        case UNTIL_COMMAND:
+	            // UNTIL a DO b DONE
+	            execute_command(c->u.command[0],profiling);
+	            while (! (c->u.command[0]->status == 0)	)	// a is false
+	            {
+	                execute_command(c->u.command[1],profiling);
+	                c->status = c->u.command[1]->status;
+	            }
+	            break;
+	        case PIPE_COMMAND:
+	            if (exec_pipe_command(c, profiling) < 0)
+	                ;//exit(1);
+	            break;
+	}
+
+	if (in >= 0){
+		close(in);
+		dup2(stdin_copy,0);
+	}
+	if (out >=0){
+		close(out);
+		dup2(stdout_copy,1);
+	}
+	close(stdin_copy);
+	close(stdout_copy);
 }

@@ -489,7 +489,7 @@ make_command_stream (int (*get_next_byte) (void *),
 											evaluateOnce();
 									  }
 									  if (op_stack_top > 0 || cmd_stack_top > 0){
-									  		error(1,0,"Something wrong before this command.");
+									  		error(1,0,"Line %u: Something wrong before this command.", __LINE__);
 									  }
 									  if (cmd_stack_top == 0){
 										  cmd_stream->next = initiate_command_stream();
