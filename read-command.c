@@ -130,35 +130,35 @@ char *get_next_token(int (*get_next_byte) (void *),
 }
 
 enum operator_type get_token_type(char *token){
-    if (strncmp(token,"if",2) == 0)
+    if (strcmp(token,"if") == 0)
         return IF;
-    if (strncmp(token,"then",4) == 0)
+    if (strcmp(token,"then") == 0)
         return THEN;
-    if (strncmp(token,"else",4) == 0)
+    if (strcmp(token,"else") == 0)
         return ELSE;
-    if (strncmp(token,"fi",2) == 0)
+    if (strcmp(token,"fi") == 0)
         return FI;
-    if (strncmp(token,";",1) == 0)
+    if (strcmp(token,";") == 0)
         return SEMICOLON;
-    if (strncmp(token,"|",1) == 0)
+    if (strcmp(token,"|") == 0)
         return PIPE;
-    if (strncmp(token,"while",5) == 0)
+    if (strcmp(token,"while") == 0)
         return WHILE;
-    if (strncmp(token,"until",5) == 0)
+    if (strcmp(token,"until") == 0)
         return UNTIL;
-    if (strncmp(token,"done",4) == 0)
+    if (strcmp(token,"done") == 0)
         return DONE;
-    if (strncmp(token,"do",2) == 0)
+    if (strcmp(token,"do") == 0)
         return DO;
-    if (strncmp(token,"(",1) == 0)
+    if (strcmp(token,"(") == 0)
         return LEFT_PAREN;
-    if (strncmp(token,")",1) == 0)
+    if (strcmp(token,")") == 0)
         return RIGHT_PAREN;
-    if (strncmp(token,"\n",1) == 0)
+    if (strcmp(token,"\n") == 0)
         return NEWLINE;
-    if (strncmp(token,"<",1) == 0)
+    if (strcmp(token,"<") == 0)
         return STDIN;
-    if (strncmp(token,">",1) == 0)
+    if (strcmp(token,">") == 0)
         return STDOUT;
     
     return OTHERS;
@@ -345,22 +345,22 @@ make_command_stream (int (*get_next_byte) (void *),
       	//printf("---------end of file ---------\n");
       	      //printf("top of op stack: %d\n", op_stack_top);
       	//printf("top of cmd stack: %d\n", cmd_stack_top);
-      	  if (top_of_op_stack() == NEWLINE)
-                pop_op_stack();
-      	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
-				evaluateOnce();
-		  }
-		  
-		  if (op_stack_top >= 0 || cmd_stack_top > 0){
-		  		error(1,0,"Something wrong before EOF.");
-		  }
-		  if (cmd_stack_top == 0){
-			  cmd_stream->next = initiate_command_stream();
-			  cmd_stream = cmd_stream->next;
-			  cmd_stream->command = pop_cmd_stack();
-			  last_push_type = 0;
-		  }
-      	  break;
+          if (top_of_op_stack() == NEWLINE)
+                    pop_op_stack();
+          while (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+    				  evaluateOnce();
+    		  }
+    		  
+    		  if (op_stack_top >= 0 || cmd_stack_top > 0){
+    		  		error(1,0,"Something wrong before EOF.");
+    		  }
+    		  if (cmd_stack_top == 0){
+    			  cmd_stream->next = initiate_command_stream();
+    			  cmd_stream = cmd_stream->next;
+    			  cmd_stream->command = pop_cmd_stack();
+    			  last_push_type = 0;
+    		  }
+          	  break;
       }      
       if (*token == ' ' || token[0] == '\0' || *token == '\t')
           continue; //ignore spaces
@@ -442,7 +442,7 @@ make_command_stream (int (*get_next_byte) (void *),
               {
               	  case STDIN:
               	  case STDOUT:
-              	  	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+              	  	  while (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
 					 		evaluateOnce();
 					  }
 					  ////printf("top of op stack: %d\n", op_stack_top);
@@ -484,7 +484,7 @@ make_command_stream (int (*get_next_byte) (void *),
 							      	  ////printf("top of op stack: %d\n", op_stack_top);
 							      	  ////printf("top of cmd stack: %d\n", cmd_stack_top);
 							      	  ////printf("type of top of op stack:%d\n", top_of_op_stack());
-							      	  if (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
+							      	  while (top_of_op_stack() == PIPE || top_of_op_stack() == SEMICOLON){
 											evaluateOnce();
 									  }
 									  if (op_stack_top > 0 || cmd_stack_top > 0){
@@ -638,9 +638,9 @@ make_command_stream (int (*get_next_byte) (void *),
              }
           }
       }
-      ////printf("top of op stack: %d\n", op_stack_top);
-      ////printf("top of cmd stack: %d\n", cmd_stack_top);
-      ////printf("Last push type: %d\n", last_push_type);
+      // printf("top of op stack: %d\n", op_stack_top);
+      // printf("top of cmd stack: %d\n", cmd_stack_top);
+      // printf("Last push type: %d\n", last_push_type);
   } 
 
   return head;
