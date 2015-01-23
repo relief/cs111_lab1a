@@ -52,7 +52,9 @@ int exec_simple_command(command_t c){
     		c->status = 0;
     	}else
 	        if (execvp(*c->u.word,c->u.word) < 0) {
-	                error (1, 0, "Execvp for SIMPLE failed");
+	                //error (1, 0, "Execvp for SIMPLE failed");
+			char **w = c->u.word;
+			printf("%s: command not found\n", *w);
 	                return -1;
 	        }
         exit(0);
