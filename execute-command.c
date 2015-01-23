@@ -48,10 +48,13 @@ int exec_simple_command(command_t c){
         return -1;
     }
     else if (pid == 0) {
-        if (execvp(*c->u.word,c->u.word) < 0) {
-                error (1, 0, "Execvp for SIMPLE failed");
-                return -1;
-        }
+    	if (strcmp(*c->u.word,":") == 0){
+    		c->status = 0;
+    	}else
+	        if (execvp(*c->u.word,c->u.word) < 0) {
+	                error (1, 0, "Execvp for SIMPLE failed");
+	                return -1;
+	        }
         exit(0);
     }
     else {
