@@ -94,8 +94,7 @@ char *get_next_token(int (*get_next_byte) (void *),
     || c == ' ' || c == '\t'|| c == '\n' || c == ';' || c == '|' || c == ':' || c == '>' || c == '<' || c == '(' || c == ')' || c==EOF
     || c == '#')
     {
-	 // printf("HERE\n");
-	
+	     
     }else
     	error(1, 0, "Unrecognizable character entered.");
 
