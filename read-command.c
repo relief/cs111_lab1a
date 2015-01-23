@@ -174,16 +174,14 @@ command_t top_of_cmd_stack(){
     return NULL;
 }
 command_t pop_cmd_stack(){
-    cmd_stack_top -= 1;
-    return cmd_stack[cmd_stack_top + 1];
+    return cmd_stack_top >= 0? cmd_stack[cmd_stack_top--] : NULL;
 }
 void push_to_op_stack(enum operator_type ele){
     op_stack_top = op_stack_top + 1;
     op_stack[op_stack_top] = ele;
 }
 enum operator_type pop_op_stack(){
-    op_stack_top = op_stack_top - 1;
-    return op_stack[op_stack_top + 1];
+    return op_stack_top >= 0? op_stack[op_stack_top--] : 0;
 }
 enum operator_type top_of_op_stack(){
     if (op_stack_top < 0)
@@ -305,7 +303,7 @@ void evaluateOnce(){
             else if (op == UNTIL)
                 res = parse_as_until(tmp1,tmp2);
             break;
-        case LEFT_PAREN:
+    case LEFT_PAREN:
             //pop_op_stack(); // pop LEFT_PAREN
 	    //printf("just parsed subshell\n");
 	    	if (tmp2 == NULL)
@@ -314,8 +312,7 @@ void evaluateOnce(){
 	    	{
 	    		push_to_cmd_stack(tmp1);
 	    	}
-	    		
-            res = parse_as_subshell(tmp2);
+	    	res = parse_as_subshell(tmp2);
             break;
         default:
             error(1, 0, "Something went wrong in evaluateOnce");
@@ -638,9 +635,9 @@ make_command_stream (int (*get_next_byte) (void *),
              }
           }
       }
-      // printf("top of op stack: %d\n", op_stack_top);
-      // printf("top of cmd stack: %d\n", cmd_stack_top);
-      // printf("Last push type: %d\n", last_push_type);
+      printf("top of op stack: %d\n", op_stack_top);
+      printf("top of cmd stack: %d\n", cmd_stack_top);
+      printf("Last push type: %d\n", last_push_type);
   } 
 
   return head;
