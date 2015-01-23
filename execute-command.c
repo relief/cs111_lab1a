@@ -67,13 +67,14 @@ int exec_pipe_command(command_t c, int profiling){
     pid_t pid,childpid;
     int fd[2];
     int stdin_copy = dup(0);
-
+    
+    pipe(fd);
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
 
-    pipe(fd);
+
     if (pid == 0) {
         		//close(1);
     		//	printf("a start---------------\n");
