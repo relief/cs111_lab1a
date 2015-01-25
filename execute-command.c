@@ -44,6 +44,25 @@ command_status (command_t c)
     return c->status;
 }
 
+// Returns the time of a timeval in seconds
+double time_in_sec(struct timeval x)
+{
+    double x_sec = (double)x.tv_sec + (double)x.tv_usec/1000000;
+    return sec;
+}
+
+// Returns the time difference in seconds
+double time_diff(struct timeval x , struct timeval y)
+{
+    double x_sec , y_sec , diff;
+    
+    x_sec = time_in_sec(x);
+    y_sec = time_in_sec(y);
+    diff = (double)y_sec - (double)x_sec;
+    
+    return diff;
+}
+
 int exec_simple_command(command_t c, int profiling){
     pid_t pid;
     
@@ -75,9 +94,12 @@ int exec_simple_command(command_t c, int profiling){
         clock_gettime(CLOCK_REALTIME, &finish);
         
         if (profiling == 0) { // write profiling info to log
-            int exec_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec);
+            double exec_time = time_diff(start, end);
             getusage(RUSAGE_CHILDREN, &usage)
-            log.write(finish, exec_time, usage.ru_utime, usage.ru_stime, c->u.word);
+            double user_time = time_in_sec(usage.ru_utime);
+            double system_time = time_in_sec(usage.ru_stime);
+            double system_time = (stime.tv_sec + stime.tv_sec) + (stime.tv_nsec + stime.tv_nsec)/1000000.0;
+            log.write(finish, exec_time, user_time, system_time, c->u.word);
         }
     }
   //  printf("I am at the end of simple command with c status %d\n",c->status);
