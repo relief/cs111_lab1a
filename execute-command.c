@@ -21,6 +21,9 @@
 #include "fcntl.h"
 
 #include <error.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
  static function definitions, etc.  */
@@ -41,8 +44,14 @@ command_status (command_t c)
     return c->status;
 }
 
-int exec_simple_command(command_t c){
+int exec_simple_command(command_t c, int profiling){
     pid_t pid;
+    
+    //start time
+    struct timespec start, finish;
+    struct rusage usage;
+    clock_gettime(CLOCK_REALTIME, &start);
+    
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
@@ -62,7 +71,14 @@ int exec_simple_command(command_t c){
     else {
         while (wait(&(c->status)) != pid)
             ;
- //       printf("in simple, c status code %d\n",c->status);
+        //finish time
+        clock_gettime(CLOCK_REALTIME, &finish);
+        
+        if (profiling == 0) { // write profiling info to log
+            int exec_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec);
+            getusage(RUSAGE_CHILDREN, &usage)
+            log.write(finish, exec_time, usage.ru_utime, usage.ru_stime, c->u.word);
+        }
     }
   //  printf("I am at the end of simple command with c status %d\n",c->status);
     return 0;
@@ -73,12 +89,16 @@ int exec_pipe_command(command_t c, int profiling){
     int fd[2];
     int stdin_copy = dup(0);
     
+    //start time
+    struct timespec start, finish;
+    struct rusage usage;
+    clock_gettime(CLOCK_REALTIME, &start);
+    
     pipe(fd);
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
-
 
     if (pid == 0) {
         		//close(1);
@@ -114,7 +134,17 @@ int exec_pipe_command(command_t c, int profiling){
 	//printf("parents wait begin\n");
 	//close(fd[0]);
 	//close(fd[1]);
-    //wait(pid);
+    wait(pid);
+    
+    //finish time - profile after a process finishes
+    clock_gettime(CLOCK_REALTIME, &finish);
+    
+    if (profiling == 0) { // write profiling info to log
+        int exec_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec);
+        getusage(RUSAGE_CHILDREN, &usage)
+        log.write(finish, exec_time, usage.ru_utime, usage.ru_stime, c->u.word);
+    }
+    
 	dup2(stdin_copy,0);
 	close(stdin_copy);
     //printf("c0 status:%d\n",c->u.command[0]->status);
@@ -129,7 +159,6 @@ int exec_pipe_command(command_t c, int profiling){
 void
 execute_command (command_t c, int profiling)
 {
-
   /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
     pid_t pid;
     int status = 0;
@@ -148,10 +177,13 @@ execute_command (command_t c, int profiling)
 		out = open(c->output, O_WRONLY | O_APPEND | O_CREAT, 0666);
 	}
 		
+    if (profiling == 0) {
+        
+    }
    
     switch (c->type){
 	    	case SIMPLE_COMMAND:
-	    		if (exec_simple_command(c) < 0)
+	    		if (exec_simple_command(c, profiling) < 0)
 	    			exit(1);
 //	    		printf("simple command return %d\n",c->status);
 	    		break;
