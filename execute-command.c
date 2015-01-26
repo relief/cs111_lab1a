@@ -55,7 +55,7 @@ void getCmd(char** w,char* str){
 // Returns the time of a timeval in seconds
 double time_in_sec(struct timeval x)
 {
-    double x_sec = (double)x.tv_sec + (double)x.tv_usec/1000000;
+    double x_sec = x.tv_sec + x.tv_usec/1000000;
     return x_sec;
 }
 
