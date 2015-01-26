@@ -27,6 +27,7 @@ DISTDIR = lab1-$(USER)
 CHECK_DIST = ./check-dist
 TAR = tar
 TAR_FLAGS = --numeric-owner --owner=0 --group=0 --mode=go+u,u+w,go-w
+LDADD = -lrt
 
 all: profsh
 
@@ -46,7 +47,7 @@ DIST_SOURCES = \
   $(TESTS) check-dist COPYING README
 
 profsh: $(PROFSH_OBJECTS)
-	$(CC) $(CFLAGS) -o $@ $(PROFSH_OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $(PROFSH_OBJECTS) $(LDADD)
 
 alloc.o: alloc.h
 execute-command.o main.o print-command.o read-command.o: command.h
