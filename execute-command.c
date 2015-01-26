@@ -64,8 +64,8 @@ double time_diff(struct timespec x , struct timespec y)
     double x_sec , y_sec , diff;
     
     x_sec = (double)x.tv_sec + (double)x.tv_nsec/1000000000;
-    y_sec = (double)x.tv_sec + (double)x.tv_nsec/1000000000;
-    diff = (double)y_sec - (double)x_sec;
+    y_sec = (double)y.tv_sec + (double)y.tv_nsec/1000000000;
+    diff = y_sec - x_sec;
     
     return diff;
 }
@@ -114,7 +114,8 @@ int exec_simple_command(command_t c, int profiling){
             getrusage(RUSAGE_CHILDREN, &usage);
             double user_time = time_in_sec(usage.ru_utime);
             double system_time = time_in_sec(usage.ru_stime);
-            sprintf(output,"%lf %lf %lf %lf",(double)finish.tv_sec, exec_time, user_time, system_time);
+	    double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
+            sprintf(output,"%lf %lf %lf %lf", finish_time, exec_time, user_time, system_time);
             sprintf(output,"%s %s\n",output,cmd);
             write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
             printf("%s",output);
