@@ -44,6 +44,7 @@ command_status (command_t c)
 {
     return c->status;
 }
+
 void getCmd(char** w,char* str){
     sprintf(str,"%s",*w);
     while(*++w){
@@ -204,7 +205,6 @@ int exec_pipe_command(command_t c, int profiling){
 void
 execute_command (command_t c, int profiling)
 {
-
     // Handle standard input/output redirection
 
     int stdin_copy  = dup(0);
