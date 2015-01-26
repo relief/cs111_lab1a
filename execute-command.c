@@ -45,9 +45,13 @@ command_status (command_t c)
     return c->status;
 }
 void getCmd(char** w,char* str){
-    sprintf(str,"%s",*w);
-    while(*++w){
-        sprintf(str,"%s %s",str,*w);
+    if (strncmp(*w,":") == 0){
+        sprintf(str,"[%d]",getpid());
+    }else{    
+        sprintf(str,"%s",*w);
+        while(*++w){
+            sprintf(str,"%s %s",str,*w);
+        }
     }
 }
 
@@ -63,7 +67,6 @@ double time_in_sec(struct timeval x)
 double time_diff(struct timespec x , struct timespec y)
 {
     double x_sec , y_sec , diff;
-    
     x_sec = (double)x.tv_sec + (double)x.tv_nsec/1000000000;
     y_sec = (double)y.tv_sec + (double)y.tv_nsec/1000000000;
     diff = y_sec - x_sec;
@@ -111,7 +114,7 @@ int exec_simple_command(command_t c, int profiling){
         clock_gettime(CLOCK_REALTIME, &finish);
         
         if (profiling >= 0) { // write profiling info to log
-	    double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
+	        double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
             double exec_time = time_diff(start, finish);
             getrusage(RUSAGE_CHILDREN, &usage);
             double user_time = time_in_sec(usage.ru_utime);
@@ -122,7 +125,6 @@ int exec_simple_command(command_t c, int profiling){
             write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
             printf("%s",output);
         }
-
     }
   //  printf("I am at the end of simple command with c status %d\n",c->status);
     return 0;
