@@ -21,6 +21,9 @@
 #include "fcntl.h"
 #include <unistd.h>
 #include <error.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
  static function definitions, etc.  */
@@ -47,12 +50,36 @@ void getCmd(char** w,char* str){
     }
 }
 
-int exec_simple_command(command_t c,int profiling){
+
+// Returns the time of a timeval in seconds
+double time_in_sec(struct timeval x)
+{
+    double x_sec = (double)x.tv_sec + (double)x.tv_usec/1000000;
+    return x_sec;
+}
+
+// Returns the time difference in seconds
+double time_diff(struct timespec x , struct timespec y)
+{
+    double x_sec , y_sec , diff;
+    
+    x_sec = (double)x.tv_sec + (double)x.tv_nsec/1000000000;
+    y_sec = (double)x.tv_sec + (double)x.tv_nsec/1000000000;
+    diff = (double)y_sec - (double)x_sec;
+    
+    return diff;
+}
+
+int exec_simple_command(command_t c, int profiling){
     pid_t pid;
     char cmd[10000];
     char time_output[100];
-
-    // start time
+    //start time
+    struct timespec start;
+    struct timespec finish;
+    struct rusage usage;
+    clock_gettime(CLOCK_REALTIME, &start);
+    
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
@@ -72,13 +99,26 @@ int exec_simple_command(command_t c,int profiling){
         while (wait(&(c->status)) != pid)
             ;
         //finish time
+
         //calculate thme
         //logging < 1023
 
         //sprintf(str, "Value of Pi = %f", M_PI);
         getCmd(c->u.word,cmd);
-        write(profiling,cmd,strlen(cmd));
-        write(profiling,"\n",1);
+
+
+        clock_gettime(CLOCK_REALTIME, &finish);
+        
+        if (profiling >= 0) { // write profiling info to log
+            double exec_time = time_diff(start, finish);
+            getrusage(RUSAGE_CHILDREN, &usage);
+            double user_time = time_in_sec(usage.ru_utime);
+            double system_time = time_in_sec(usage.ru_stime);
+            printf("%lf %lf %lf %lf\n",(double)finish.tv_sec, exec_time, user_time, system_time);            
+            write(profiling,cmd,strlen(cmd));
+            write(profiling,"\n",1);
+        }
+
     }
   //  printf("I am at the end of simple command with c status %d\n",c->status);
     return 0;
@@ -89,12 +129,16 @@ int exec_pipe_command(command_t c, int profiling){
     int fd[2];
     int stdin_copy = dup(0);
     
+    //start time
+    struct timespec start, finish;
+    struct rusage usage;
+    clock_gettime(CLOCK_REALTIME, &start);
+    
     pipe(fd);
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
     }
-
 
     if (pid == 0) {
         		//close(1);
@@ -130,7 +174,18 @@ int exec_pipe_command(command_t c, int profiling){
 	//printf("parents wait begin\n");
 	//close(fd[0]);
 	//close(fd[1]);
+    
     //wait(pid);
+    
+    //finish time - profile after a process finishes
+    //clock_gettime(CLOCK_REALTIME, &finish);
+    
+/*    if (profiling == 0) { // write profiling info to log
+        int exec_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec);
+        getusage(RUSAGE_CHILDREN, &usage)
+        log.write(finish, exec_time, usage.ru_utime, usage.ru_stime, c->u.word);
+    }*/
+    
 	dup2(stdin_copy,0);
 	close(stdin_copy);
     //printf("c0 status:%d\n",c->u.command[0]->status);
@@ -161,10 +216,13 @@ execute_command (command_t c, int profiling)
 		out = open(c->output, O_WRONLY | O_APPEND | O_CREAT, 0666);
 	}
 		
+    if (profiling == 0) {
+        
+    }
    
     switch (c->type){
 	    	case SIMPLE_COMMAND:
-	    		if (exec_simple_command(c,profiling) < 0)
+	    		if (exec_simple_command(c, profiling) < 0)
 	    			exit(1);
 //	    		printf("simple command return %d\n",c->status);
 	    		break;
