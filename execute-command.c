@@ -19,7 +19,7 @@
 #include "command-internals.h"
 #include "sys/types.h"
 #include "fcntl.h"
-
+#include <unistd.h>
 #include <error.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
@@ -31,8 +31,8 @@ prepare_profiling (char const *name)
     /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
-    error (0, 0, "warning: profiling not yet implemented");
-    return -1;
+    int f = open(name, O_WRONLY | O_APPEND | O_CREAT, 0666);
+    return f;
 }
 
 int
@@ -40,9 +40,19 @@ command_status (command_t c)
 {
     return c->status;
 }
+void getCmd(char** w,char* str){
+    sprintf(str,"%s",*w);
+    while(*++w){
+        sprintf(str,"%s %s",str,*w);
+    }
+}
 
-int exec_simple_command(command_t c){
+int exec_simple_command(command_t c,int profiling){
     pid_t pid;
+    char cmd[10000];
+    char time_output[100];
+
+    // start time
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
         return -1;
@@ -52,17 +62,23 @@ int exec_simple_command(command_t c){
     		c->status = 0;
     	}else
 	        if (execvp(*c->u.word,c->u.word) < 0) {
-	                //error (1, 0, "Execvp for SIMPLE failed");
-			char **w = c->u.word;
-			printf("%s: command not found\n", *w);
-	                return -1;
+    			char **w = c->u.word;
+    			printf("%s: command not found\n", *w);
+    	                return -1;
 	        }
         exit(0);
     }
     else {
         while (wait(&(c->status)) != pid)
             ;
- //       printf("in simple, c status code %d\n",c->status);
+        //finish time
+        //calculate thme
+        //logging < 1023
+
+        //sprintf(str, "Value of Pi = %f", M_PI);
+        getCmd(c->u.word,cmd);
+        write(profiling,cmd,strlen(cmd));
+        write(profiling,"\n",1);
     }
   //  printf("I am at the end of simple command with c status %d\n",c->status);
     return 0;
@@ -130,9 +146,6 @@ void
 execute_command (command_t c, int profiling)
 {
 
-  /* FIXME: Replace this with your implementation, like 'prepare_profiling'.  */
-    pid_t pid;
-    int status = 0;
     // Handle standard input/output redirection
 
     int stdin_copy  = dup(0);
@@ -151,7 +164,7 @@ execute_command (command_t c, int profiling)
    
     switch (c->type){
 	    	case SIMPLE_COMMAND:
-	    		if (exec_simple_command(c) < 0)
+	    		if (exec_simple_command(c,profiling) < 0)
 	    			exit(1);
 //	    		printf("simple command return %d\n",c->status);
 	    		break;
@@ -198,7 +211,9 @@ execute_command (command_t c, int profiling)
 	            break;
 	        case PIPE_COMMAND:
 	            if (exec_pipe_command(c, profiling) < 0)
-	                ;//exit(1);
+	            {
+
+                }
 	            break;
 	}
 

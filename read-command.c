@@ -336,7 +336,7 @@ make_command_stream (int (*get_next_byte) (void *),
   command_stream_t cmd_stream = head;
   
 
-  while (token = get_next_token(get_next_byte, get_next_byte_argument))
+  while ((token = get_next_token(get_next_byte, get_next_byte_argument)))
   {
       if (*token == EOF){   
       	//printf("---------end of file ---------\n");
@@ -629,8 +629,11 @@ make_command_stream (int (*get_next_byte) (void *),
                       if (top_of_op_stack() != DO) {
 					  //////printf("Last operator: %d\n", top_of_op_stack());
 		                          error (1, 0, "Something wrong before DONE.");
-				      }
+				              }
                       evaluateOnce();
+                      break;
+
+                  default:
                       break;
              }
           }
