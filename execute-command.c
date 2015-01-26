@@ -73,7 +73,7 @@ double time_diff(struct timespec x , struct timespec y)
 int exec_simple_command(command_t c, int profiling){
     pid_t pid;
     char cmd[10000];
-    char time_output[100];
+    char output[50000];
     //start time
     struct timespec start;
     struct timespec finish;
@@ -114,9 +114,10 @@ int exec_simple_command(command_t c, int profiling){
             getrusage(RUSAGE_CHILDREN, &usage);
             double user_time = time_in_sec(usage.ru_utime);
             double system_time = time_in_sec(usage.ru_stime);
-            printf("%lf %lf %lf %lf\n",(double)finish.tv_sec, exec_time, user_time, system_time);            
-            write(profiling,cmd,strlen(cmd));
-            write(profiling,"\n",1);
+            sprintf(output,"%lf %lf %lf %lf",(double)finish.tv_sec, exec_time, user_time, system_time);
+            sprintf(output,"%s %s\n",output,cmd);
+            write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
+            printf("%s",output);
         }
 
     }
