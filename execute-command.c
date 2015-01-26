@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+
 #include "command.h"
 #include "command-internals.h"
 #include "sys/types.h"
@@ -22,8 +23,8 @@
 #include <unistd.h>
 #include <error.h>
 #include <time.h>
-#include <sys/time.h>
-#include <sys/resource.h>
+#include "sys/time.h"
+#include "sys/resource.h"
 
 /* FIXME: You may need to add #include directives, macro definitions,
  static function definitions, etc.  */
@@ -114,7 +115,7 @@ int exec_simple_command(command_t c, int profiling){
             getrusage(RUSAGE_CHILDREN, &usage);
             double user_time = time_in_sec(usage.ru_utime);
             double system_time = time_in_sec(usage.ru_stime);
-            sprintf(output,"%lf %lf %lf %lf",(double)finish.tv_sec, exec_time, user_time, system_time);
+            sprintf(output,"%.2lf %.3lf %.3lf %.3lf",(double)finish.tv_sec, exec_time, user_time, system_time);
             sprintf(output,"%s %s\n",output,cmd);
             write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
             printf("%s",output);
