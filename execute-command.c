@@ -40,6 +40,28 @@ prepare_profiling (char const *name)
 }
 
 int
+finish_profiling (int fd) {
+    print_profiling();
+    close(fd);
+}
+
+void print_profiling (struct timespec start, struct timespec finish, struct rusage usage, cmd, pid) {
+    struct timespec finish;
+    clock_gettime(CLOCK_REALTIME, &finish);
+    
+    double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
+    double exec_time = time_diff(start, finish);
+    getrusage(RUSAGE_CHILDREN, &usage);
+    double user_time = time_in_sec(usage.ru_utime);
+    double system_time = time_in_sec(usage.ru_stime);
+    
+    sprintf(output,"%.2lf %.3lf %.3lf %.3lf", finish_time, exec_time, user_time, system_time);
+    sprintf(output,"%s %s\n",output,cmd);
+    write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
+    printf("%s",output);
+}
+
+int
 command_status (command_t c)
 {
     return c->status;
@@ -81,9 +103,9 @@ int exec_simple_command(command_t c, int profiling){
     char output[50000];
     //start time
     struct timespec start;
-    struct timespec finish;
-    struct rusage usage;
-    clock_gettime(CLOCK_REALTIME, &start);
+    //struct timespec finish;
+    if (profiling >= 0)
+        clock_gettime(CLOCK_REALTIME, &start);
     
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
@@ -112,7 +134,7 @@ int exec_simple_command(command_t c, int profiling){
         //sprintf(str, "Value of Pi = %f", M_PI);
         getCmd(c->u.word,cmd);
 
-
+        /*
         clock_gettime(CLOCK_REALTIME, &finish);
         
         if (profiling >= 0) { // write profiling info to log
@@ -129,7 +151,7 @@ int exec_simple_command(command_t c, int profiling){
             sprintf(output,"%s %s\n",output,cmd);
             write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
             printf("%s",output);
-        }
+        } */
     }
   //  printf("I am at the end of simple command with c status %d\n",c->status);
     return 0;
@@ -181,7 +203,6 @@ int exec_pipe_command(command_t c, int profiling){
                 c->status = c->u.command[1]->status;                
                 //printf("b end c1 status%d\n", c->u.command[1]->status);
     }
-    
 	dup2(stdin_copy,0);
 	close(stdin_copy);
     return 0;
@@ -205,7 +226,7 @@ execute_command (command_t c, int profiling)
 		out = open(c->output, O_WRONLY | O_APPEND | O_CREAT, 0666);
 	}
 		
-    if (profiling == 0) {
+    if (profiling >= 0) {
         
     }
    
