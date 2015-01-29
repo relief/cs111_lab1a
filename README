@@ -1,7 +1,7 @@
 Xie Yu, SID: 204398665
 Guanya Yang, SID: 204378262
 
-CS 111 Lab 1b: Profiling Shell Execution
+CS 111 Lab 1c: Profiling Shell Execution
 ————————————————————————————————————————— 
 We implemented the execution of the shell input created from part 1a. The input are executed as commands by the execute_command() function detailed in the file execute-command.c. We handle any stdin or stdout redirection, as well as the command type while executing the commands.
 
@@ -11,3 +11,28 @@ For each command type, we evaluate all commands except for the SIMPLE_COMMAND re
 
 Finally, we created two test cases: test_1b_good.sh and test_1b_bad.sh.
 
+Questions:
+	1. Must the first column of the log output be in nondecreasing order? If not, give a counterexample.
+
+		Not necessary. The output order of the log is based related to finish time, not the start time. So for example, when we 
+deal with A | B, the process for B may start first while the process for A finish first. In this case, it is possible to see log output in not nondecreasing order.
+
+	2. Can the second column be less than the sum of the third and fourth columns, other than due to rounding errors? If so, explain why.
+		No it can't. (not sure actually)
+
+	3. Can the second, third, or fourth column ever be negative? Briefly explain.
+		No, it is impossible. How can you eat a sandwich in -1 second.
+	
+	4. How did you test your shell to make sure that log lines are not interleaved? If you used test scripts, submit a copy of the scripts as part of your submission tarball.
+
+	Test a lot of pipe. 
+
+
+
+To do:
+	1. figure out issue of user time , sys time;
+	2. output for the whole shell;
+	3. error for unable to write the file;  lalala
+	4. answer questions;		
+
+	5. check resolution 

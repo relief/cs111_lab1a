@@ -60,7 +60,7 @@ void getCmd(char** w,char* str){
 // Returns the time of a timeval in seconds
 double time_in_sec(struct timeval x)
 {
-    double x_sec = x.tv_sec + x.tv_usec/1000000;
+    double x_sec = x.tv_sec + x.tv_usec/1000000.0;
     return x_sec;
 }
 
@@ -101,6 +101,7 @@ int exec_simple_command(command_t c, int profiling){
         exit(0);
     }
     else {
+
         while (wait(&(c->status)) != pid)
             ;
         //finish time
@@ -120,6 +121,9 @@ int exec_simple_command(command_t c, int profiling){
             getrusage(RUSAGE_CHILDREN, &usage);
             double user_time = time_in_sec(usage.ru_utime);
             double system_time = time_in_sec(usage.ru_stime);
+            printf ("--------CPU time: %ld.%06ld sec user, %ld.%06ld sec system\n",
+            usage.ru_utime.tv_sec, usage.ru_utime.tv_usec,
+            usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
 	    
             sprintf(output,"%.2lf %.3lf %.3lf %.3lf", finish_time, exec_time, user_time, system_time);
             sprintf(output,"%s %s\n",output,cmd);
@@ -177,30 +181,9 @@ int exec_pipe_command(command_t c, int profiling){
                 c->status = c->u.command[1]->status;                
                 //printf("b end c1 status%d\n", c->u.command[1]->status);
     }
-
-	//printf("parents wait begin\n");
-	//close(fd[0]);
-	//close(fd[1]);
-    
-    //wait(pid);
-    
-    //finish time - profile after a process finishes
-    //clock_gettime(CLOCK_REALTIME, &finish);
-    
-/*    if (profiling == 0) { // write profiling info to log
-        int exec_time = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec);
-        getusage(RUSAGE_CHILDREN, &usage)
-        log.write(finish, exec_time, usage.ru_utime, usage.ru_stime, c->u.word);
-    }*/
     
 	dup2(stdin_copy,0);
 	close(stdin_copy);
-    //printf("c0 status:%d\n",c->u.command[0]->status);
-    //printf("c1 status:%d\n",c->u.command[1]->status);
-    //printf("c  status:%d\n",c->status);
-        //c->status = c->u.command[1]->status;
-    // Redirect input from pipe    
-    // execute_command(c->u.command[1],profiling);
     return 0;
 }
 
