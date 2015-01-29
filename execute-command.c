@@ -139,6 +139,7 @@ int exec_simple_command(command_t c, int profiling){
         exit(0);
     }
     else {
+
         while (wait(&(c->status)) != pid)
             ;
         //finish time
@@ -161,6 +162,9 @@ int exec_simple_command(command_t c, int profiling){
             getrusage(RUSAGE_CHILDREN, &usage);
             double user_time = time_in_sec(usage.ru_utime);
             double system_time = time_in_sec(usage.ru_stime);
+            printf ("--------CPU time: %ld.%06ld sec user, %ld.%06ld sec system\n",
+            usage.ru_utime.tv_sec, usage.ru_utime.tv_usec,
+            usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
 	    
             sprintf(output,"%.2lf %.3lf %.3lf %.3lf", finish_time, exec_time, user_time, system_time);
             sprintf(output,"%s %s\n",output,cmd);
@@ -218,21 +222,8 @@ int exec_pipe_command(command_t c, int profiling){
                 c->status = c->u.command[1]->status;                
                 //printf("b end c1 status%d\n", c->u.command[1]->status);
     }
-
-	//printf("parents wait begin\n");
-	//close(fd[0]);
-	//close(fd[1]);
-    
-    //wait(pid);
-    
 	dup2(stdin_copy,0);
 	close(stdin_copy);
-    //printf("c0 status:%d\n",c->u.command[0]->status);
-    //printf("c1 status:%d\n",c->u.command[1]->status);
-    //printf("c  status:%d\n",c->status);
-        //c->status = c->u.command[1]->status;
-    // Redirect input from pipe    
-    // execute_command(c->u.command[1],profiling);
     return 0;
 }
 
