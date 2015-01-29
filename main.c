@@ -90,6 +90,7 @@ main (int argc, char **argv)
 	}
     }
   if (profiling >= 0){
+      
       finish_profiling(profiling);
       //close(profiling);
   }

@@ -6,7 +6,7 @@ sleep 0.1547825513s
 
 : : :
 
-ls; pwd; echo wow ewhofa
+#ls; pwd; echo wow ewhofa
 
 if true
 then echo true!
@@ -21,4 +21,4 @@ while false
 do echo inside_while
 done
 
-(ls) | cat
+#(ls) | cat

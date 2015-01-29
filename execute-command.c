@@ -29,6 +29,8 @@
 /* FIXME: You may need to add #include directives, macro definitions,
  static function definitions, etc.  */
 
+struct timespec start;
+
 int
 prepare_profiling (char const *name)
 {
@@ -36,29 +38,8 @@ prepare_profiling (char const *name)
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
     int f = open(name, O_WRONLY | O_APPEND | O_CREAT, 0666);
+    clock_gettime(CLOCK_REALTIME, &start);
     return f;
-}
-
-int
-finish_profiling (int fd) {
-    print_profiling();
-    close(fd);
-}
-
-void print_profiling (struct timespec start, struct timespec finish, struct rusage usage, cmd, pid) {
-    struct timespec finish;
-    clock_gettime(CLOCK_REALTIME, &finish);
-    
-    double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
-    double exec_time = time_diff(start, finish);
-    getrusage(RUSAGE_CHILDREN, &usage);
-    double user_time = time_in_sec(usage.ru_utime);
-    double system_time = time_in_sec(usage.ru_stime);
-    
-    sprintf(output,"%.2lf %.3lf %.3lf %.3lf", finish_time, exec_time, user_time, system_time);
-    sprintf(output,"%s %s\n",output,cmd);
-    write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
-    printf("%s",output);
 }
 
 int
@@ -82,7 +63,7 @@ void getCmd(char** w,char* str){
 // Returns the time of a timeval in seconds
 double time_in_sec(struct timeval x)
 {
-    double x_sec = x.tv_sec + x.tv_usec/1000000;
+    double x_sec = x.tv_sec + x.tv_usec/1000000.0;
     return x_sec;
 }
 
@@ -97,13 +78,48 @@ double time_diff(struct timespec x , struct timespec y)
     return diff;
 }
 
+void print_profiling (int profiling, struct timespec start, char *cmd) {
+    struct timespec finish;
+    struct rusage usage;
+    char output[50000];
+
+    clock_gettime(CLOCK_REALTIME, &finish);
+    
+    double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
+    double exec_time = time_diff(start, finish);
+    if (cmd == NULL) 
+	getrusage(RUSAGE_SELF, &usage);
+    else
+    	getrusage(RUSAGE_CHILDREN, &usage);
+    double user_time = time_in_sec(usage.ru_utime);
+    double system_time = time_in_sec(usage.ru_stime);
+    
+    sprintf(output,"%.2lf %.3lf %.3lf %.3lf", finish_time, exec_time, user_time, system_time);
+    if (cmd == NULL) {
+	int pid = getpid();
+    	sprintf(output,"%s [%d]\n",output,pid);
+    }
+    else {
+	sprintf(output,"%s %s\n",output,cmd);
+    }
+    write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
+    printf("%s",output);
+}
+
+int
+finish_profiling (int fd) {
+    print_profiling(fd, start, NULL);
+    close(fd);
+}
+
 int exec_simple_command(command_t c, int profiling){
     pid_t pid;
     char cmd[10000];
-    char output[50000];
+    //char output[50000];
     //start time
     struct timespec start;
-    //struct timespec finish;
+    struct timespec finish;
+    //struct rusage usage;
     if (profiling >= 0)
         clock_gettime(CLOCK_REALTIME, &start);
     
@@ -132,6 +148,9 @@ int exec_simple_command(command_t c, int profiling){
 
         //sprintf(str, "Value of Pi = %f", M_PI);
         getCmd(c->u.word,cmd);
+	if (profiling >= 0) {
+		print_profiling(profiling, start, cmd);
+	}
 
         /*
         clock_gettime(CLOCK_REALTIME, &finish);
