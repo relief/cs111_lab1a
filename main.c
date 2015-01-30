@@ -70,9 +70,6 @@ main (int argc, char **argv)
   if (profile_name)
     {
       profiling = prepare_profiling (profile_name);
-
-      if (profiling < 0)
-          error (1, errno, "%s: cannot open", profile_name);
     }
 
   command_t last_command = NULL;
@@ -94,7 +91,7 @@ main (int argc, char **argv)
       finish_profiling(profiling);
       //close(profiling);
   }else
-    exit(1);
+      exit(1);
  
   return print_tree || !last_command ? 0 : command_status (last_command);
 }
