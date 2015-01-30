@@ -88,7 +88,7 @@ void print_profiling (int profiling, struct timespec start, char *cmd) {
     double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
     double exec_time = time_diff(start, finish);
     if (cmd == NULL) 
-	getrusage(RUSAGE_SELF, &usage);
+	    getrusage(RUSAGE_SELF, &usage);
     else
     	getrusage(RUSAGE_CHILDREN, &usage);
     double user_time = time_in_sec(usage.ru_utime);
@@ -96,11 +96,11 @@ void print_profiling (int profiling, struct timespec start, char *cmd) {
     
     sprintf(output,"%.2lf %.3lf %.3lf %.3lf", finish_time, exec_time, user_time, system_time);
     if (cmd == NULL) {
-	int pid = getpid();
+	    int pid = getpid();
     	sprintf(output,"%s [%d]\n",output,pid);
     }
     else {
-	sprintf(output,"%s %s\n",output,cmd);
+	    sprintf(output,"%s %s\n",output,cmd);
     }
     write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
     printf("%s",output);
@@ -115,8 +115,6 @@ finish_profiling (int fd) {
 int exec_simple_command(command_t c, int profiling){
     pid_t pid;
     char cmd[10000];
-    //char output[50000];
-    //start time
     struct timespec start;
     struct timespec finish;
     //struct rusage usage;
@@ -137,42 +135,14 @@ int exec_simple_command(command_t c, int profiling){
     	                return -1;
 	        }
         exit(0);
-    }
-    else {
-
-        while (wait(&(c->status)) != pid)
-            ;
-        //finish time
-
-        //calculate thme
-        //logging < 1023
-
-        //sprintf(str, "Value of Pi = %f", M_PI);
-        getCmd(c->u.word,cmd);
-	if (profiling >= 0) {
-		print_profiling(profiling, start, cmd);
-	}
-
-        /*
-        clock_gettime(CLOCK_REALTIME, &finish);
+    }else {
+        waitpid(pid,NULL,0);
         
-        if (profiling >= 0) { // write profiling info to log
-	        double finish_time = (double)finish.tv_sec + (double)finish.tv_nsec/1000000000;
-            double exec_time = time_diff(start, finish);
-            getrusage(RUSAGE_CHILDREN, &usage);
-            double user_time = time_in_sec(usage.ru_utime);
-            double system_time = time_in_sec(usage.ru_stime);
-            printf ("--------CPU time: %ld.%06ld sec user, %ld.%06ld sec system\n",
-            usage.ru_utime.tv_sec, usage.ru_utime.tv_usec,
-            usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
-	    
-            sprintf(output,"%.2lf %.3lf %.3lf %.3lf", finish_time, exec_time, user_time, system_time);
-            sprintf(output,"%s %s\n",output,cmd);
-            write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
-            printf("%s",output);
-        } */
+        getCmd(c->u.word,cmd);
+	    if (profiling >= 0) {
+		   print_profiling(profiling, start, cmd);
+	    }
     }
-  //  printf("I am at the end of simple command with c status %d\n",c->status);
     return 0;
 }
 
@@ -185,7 +155,8 @@ int exec_pipe_command(command_t c, int profiling){
     struct timespec start, finish;
     struct rusage usage;
     clock_gettime(CLOCK_REALTIME, &start);
-    
+    int status;
+
     pipe(fd);
     if ((pid = fork()) < 0) {
         error (1, 0, "Forking a child process failed");
@@ -193,35 +164,26 @@ int exec_pipe_command(command_t c, int profiling){
     }
 
     if (pid == 0) {
-        		//close(1);
-    		//	printf("a start---------------\n");
-        		dup2(fd[1],1);
+                dup2(fd[1],1);
                 close(fd[0]);
                 close(fd[1]);
                 
-                /* Send "string" through the output side of pipe */
-                //printf("a start\n");
              	execute_command(c->u.command[0],profiling);
-             	//printf("a end\n");
-           
-             	//printf("a end -------------\n");
+             	
                 exit(1);
     }
     else{
-        /* Parent process closes up output side of pipe */
-        		//close(0);
     			close(0);
                 dup2(fd[0],0);
                 close(fd[0]);
                 close(fd[1]);
 
-              //printf("b start\n");
-                //printf("b's type%d\n",c->u.command[1]->type);
                 execute_command(c->u.command[1],profiling);
-                //printf("b end\n");
+
                 c->status = c->u.command[1]->status;                
-                //printf("b end c1 status%d\n", c->u.command[1]->status);
+
     }
+    waitpid(pid,&status,0);
 	dup2(stdin_copy,0);
 	close(stdin_copy);
     return 0;

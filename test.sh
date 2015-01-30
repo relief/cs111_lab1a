@@ -1,5 +1,7 @@
 true
 
+sleep 2s | echo 3
+
 g++ -c foo.c
 
 sleep 0.1547825513s

@@ -91,11 +91,10 @@ main (int argc, char **argv)
 	}
     }
   if (profiling >= 0){
-      
       finish_profiling(profiling);
       //close(profiling);
-  }
-  if (profiling < 0)
-      exit(1);
+  }else
+    exit(1);
+ 
   return print_tree || !last_command ? 0 : command_status (last_command);
 }
