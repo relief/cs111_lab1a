@@ -33,6 +33,8 @@ To do:
 	1. figure out issue of user time , sys time;
 	2. output for the whole shell;
 	3. error for unable to write the file;  lalala
-	4. answer questions;		
 
+	4. answer questions;		
 	5. check resolution 
+	6. write test cases
+	7. fix pipe
