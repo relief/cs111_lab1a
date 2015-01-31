@@ -1,40 +1,36 @@
 Xie Yu, SID: 204398665
 Guanya Yang, SID: 204378262
 
-CS 111 Lab 1c: Profiling Shell Execution
-————————————————————————————————————————— 
-We implemented the execution of the shell input created from part 1a. The input are executed as commands by the execute_command() function detailed in the file execute-command.c. We handle any stdin or stdout redirection, as well as the command type while executing the commands.
+CS 111 Lab 1c: Profiling Shell
+———————————————————————————————
+	In this lab, we timed every process started by the shell or by one of its descendant subshells and generated the output into a log file. Since we forked a subshell for each simple command, we called the profiling functions for each simple command. 
 
-We handled the stdin and stdout redirection by closing the stdin/stdout file descriptor and opening the input or output redirection of the command.
+	The profile for each process is in the following format:
 
-For each command type, we evaluate all commands except for the SIMPLE_COMMAND recursively, so that each subcommand calls the execute_command() function again. We handle SIMPLE_COMMANDs separately in the exec_simple_command() function, which forks a child process for each simple command. There is also a separate function exec_pipe_command() for the PIPE_COMMAND by using the system calls pipe() and dup2() in order to achieve interprocess communication (IPC). We created copies of stdin(0) and stdout(1) so as not to modify them while implementing pipes or redirections.
+a b c d e
+where a = time the command finished in seconds,
+	b = command real time in seconds
+	c = command’s user CPU time in seconds
+	d = command’s system CPU time in seconds
+	e = command name, or process ID if the process is the shell process itself
 
-Finally, we created two test cases: test_1b_good.sh and test_1b_bad.sh.
+	To obtain (a), we called clock_gettime() using the clock CLOCK_REALTIME. For (b), we calculated the difference between the start time recorded at the beginning of the simple command and the finish time calculated from (a). We continued to use CLOCK_REALTIME, however it may not work if the server is the properly synchronized with UTC through NTP. We obtained (c) and (d) by calling getrusage() and chose the RUSAGE_CHILDREN parameter for profiling the simple command and chose the RUSAGE_SELF parameter for the shell itself.
+ 
 
-Questions:
-	1. Must the first column of the log output be in nondecreasing order? If not, give a counterexample.
+Answers to Questions in the Spec:
+—————————————————————————————————
+1. Must the first column of the log output be in nondecreasing order? If not, give a counterexample.
 
-		Not necessary. The output order of the log is based related to finish time, not the start time. So for example, when we 
-deal with A | B, the process for B may start first while the process for A finish first. In this case, it is possible to see log output in not nondecreasing order.
+Yes, because we wrote to the log each time a simple command finishes (when the process exits). Thus, the command finish time will always be increasing.
 
-	2. Can the second column be less than the sum of the third and fourth columns, other than due to rounding errors? If so, explain why.
-		No it can't. (not sure actually)
+2. Can the second column be less than the sum of the third and fourth columns, other than due to rounding errors? If so, explain why.
 
-	3. Can the second, third, or fourth column ever be negative? Briefly explain.
-		No, it is impossible. How can you eat a sandwich in -1 second.
-	
-	4. How did you test your shell to make sure that log lines are not interleaved? If you used test scripts, submit a copy of the scripts as part of your submission tarball.
+No the execution time can never be less than the sum of the user time and system time. This is because the user time and system time is how long the process takes to run in user-mode or kernel-mode, respectively. The execution time is the real time elapsed, which may include time slices when other processes are run and time slices when the process is blocked. Thus, the execution time can only be greater than or equal to the user time and system time.
 
-	Test a lot of pipe. 
+3. Can the second, third, or fourth column ever be negative? Briefly explain.
 
+No, we can never measure negative time because the end time can never be before a start time.
 
+4. How did you test your shell to make sure that log lines are not interleaved? If you used test scripts, submit a copy of the scripts as part of your submission tarball.
 
-To do:
-	1. figure out issue of user time , sys time;
-	2. output for the whole shell;
-	3. error for unable to write the file;  lalala
-
-	4. answer questions;		
-	5. check resolution 
-	6. write test cases
-	7. fix pipe
+We wrote test cases that contained a lot of pipe operations. Then we compared our results with the times in /proc/[pid]/stat. Our test cases are implemented in the files test.sh and test2.sh.
