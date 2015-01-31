@@ -8,3 +8,12 @@ ls | tr a-zA-Z
 
 gzip test.txt ; gunzip test.txt
 
+echo 1 | ls | sleep 1s | ps
+
+if true then
+	echo true;
+else
+	echo false;
+fi
+
+ps | cat > 1.txt

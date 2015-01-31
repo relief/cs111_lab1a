@@ -136,7 +136,8 @@ int exec_simple_command(command_t c, int profiling){
 	        }
         exit(0);
     }else {
-        waitpid(pid,NULL,0);
+        while (wait(&(c->status)) != pid)
+             ;
         
         getCmd(c->u.word,cmd);
 	    if (profiling >= 0) {
@@ -183,7 +184,7 @@ int exec_pipe_command(command_t c, int profiling){
                 c->status = c->u.command[1]->status;                
 
     }
-    waitpid(pid,&status,0);
+    waitpid(pid,NULL,0);
 	dup2(stdin_copy,0);
 	close(stdin_copy);
     return 0;
