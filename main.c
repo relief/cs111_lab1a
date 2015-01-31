@@ -43,13 +43,14 @@ main (int argc, char **argv)
 {
   int command_number = 1;
   bool print_tree = false;
+  bool print_profile = false;
   char const *profile_name = 0;
   program_name = argv[0];
 
   for (;;)
     switch (getopt (argc, argv, "p:t"))
       {
-      case 'p': profile_name = optarg; break;
+      case 'p': print_profile = true; profile_name = optarg; break;
       case 't': print_tree = true; break;
       default: usage (); break;
       case -1: goto options_exhausted;
@@ -87,11 +88,17 @@ main (int argc, char **argv)
 	  execute_command (command, profiling);
 	}
     }
-  if (profiling >= 0){
-      finish_profiling(profiling);
-      //close(profiling);
-  }else
-      exit(1);
- 
+
+  if (print_profile) {
+ 	 if (profiling >= 0){
+     		finish_profiling(profiling);
+      		//close(profiling);
+	}
+	else {
+		if (!print_tree)
+		exit(1);
+	}
+  }
+
   return print_tree || !last_command ? 0 : command_status (last_command);
 }
