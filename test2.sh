@@ -4,7 +4,7 @@ sleep 0.1547825513s
 
 : : :
 
-ls | tr a-zA-Z
+ls | tr a-z A-Z
 
 gzip test.txt ; gunzip test.txt
 
