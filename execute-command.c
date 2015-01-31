@@ -103,7 +103,7 @@ void print_profiling (int profiling, struct timespec start, char *cmd) {
 	    sprintf(output,"%s %s\n",output,cmd);
     }
     write(profiling,output,strlen(output) > 1023? 1023 : strlen(output));
-    printf("%s",output);
+   // printf("%s",output);
 }
 
 int
@@ -131,7 +131,7 @@ int exec_simple_command(command_t c, int profiling){
     	}else
 	        if (execvp(*c->u.word,c->u.word) < 0) {
     			char **w = c->u.word;
-    			printf("%s: command not found\n", *w);
+    			//printf("%s: command not found\n", *w);
     	                return -1;
 	        }
         exit(0);
